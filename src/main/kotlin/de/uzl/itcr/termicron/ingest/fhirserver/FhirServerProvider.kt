@@ -28,16 +28,34 @@ class FhirServerProvider(
     private val httpClientInitializer: (HttpClient.Builder.() -> Unit)? = null,
 ) : FhirIngestProvider(fhirContext) {
 
+    /**
+     * the logger instance for this class
+     */
     private val logger: Logger = LoggerFactory.getLogger(FhirServerProvider::class.java)
 
+    /**
+     * the HTTP Client to use
+     */
     private val httpClient: HttpClient = StaticHelpers.httpClient(httpClientInitializer)
 
+    /**
+     * a FHIR helper for the required operations
+     */
     private val fhirUtilities = FhirUtilities(httpClient, fhirContext)
 
-    private val endpoint = fhirUtilities.validateUriIsFhirServerEndpoint(endpoint)
+    /**
+     * the endpoint of the FHIR TS
+     */
+    private val endpoint = fhirUtilities.validateUriIsKnownFhirServer(endpoint)
 
     override fun supportsExpansion(): Boolean = true
 
+    /**
+     * expand a FHIR VS using the provided TS
+     *
+     * @param valueSet the VS to expand
+     * @return the VS with expansion
+     */
     @Throws(UnsupportedOperationException::class, FhirServerError::class)
     override fun expandValueSet(valueSet: ValueSet): ValueSet =
         ValueSetTsExpander(httpClientInitializer, endpoint.toString(), fhirContext).expand(valueSet)

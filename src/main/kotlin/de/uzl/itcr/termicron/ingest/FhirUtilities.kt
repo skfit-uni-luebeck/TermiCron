@@ -13,10 +13,25 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
+/**
+ * helper class to talk to FHIR HTTP endpoints
+ *
+ * @property httpClient the HttpClient to use
+ * @property fhirContext the HAPI FHIR context
+ */
 class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
 
+    /**
+     * the logger instance for this class
+     */
     val logger: Logger = LoggerFactory.getLogger(FhirUtilities::class.java)
 
+    /**
+     * a enum class for known FHIR servers, used for determining quirks re. SNOMED CT PCEs
+     *
+     * @property softwareNameFragment a fragment in the servers's capabilityStatement that somewhat uniquely idenfies
+     * this implementation
+     */
     @Suppress("SpellCheckingInspection")
     enum class KnownFhirServer(val softwareNameFragment: String) {
         ONTOSERVER("ontoserver"),
@@ -27,8 +42,19 @@ class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
         OTHER("other")
     }
 
+    /**
+     * clean this String as a URI: make sure exactly one "/" is at the end
+     *
+     * @return this String as "clean" URI
+     */
     private fun String.cleanUri(): URI = URI.create(this.trimEnd('/') + "/")
 
+    /**
+     * determine the server implementation for a specified FHIR URI endpoint
+     *
+     * @param uri the URI to verify
+     * @return the KnownFhirServer enum member
+     */
     fun getServerSoftware(uri: URI): KnownFhirServer {
         endpointServerMap[uri]?.let { return it }
         val metadataEndpoint = uri.resolve("metadata")
@@ -37,7 +63,9 @@ class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
         val detectedFhirServer = values()
             .find { softwareName.toLowerCase().contains(it.softwareNameFragment) }
             ?: OTHER
-        //logger.info("Detected FHIR Server $detectedFhirServer at: $uri")
+        if (detectedFhirServer == OTHER && capabilityStatement.software.name != null) {
+            logger.warn("The FHIR server '${capabilityStatement.software.name}' is not known")
+        }
         when (detectedFhirServer) {
             SNOWSTORM -> logger.warn("IHTSDO Snowstorm only supports SNOMED CT expansion, and is not suitable for uses other than ECL expansion!")
             HAPIFHIR, VONK -> logger.warn("HAPI FHIR and Vonk provide only limited support for terminology operations, be careful.")
@@ -48,13 +76,27 @@ class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
         return detectedFhirServer
     }
 
-    fun validateUriIsFhirServerEndpoint(uriString: String): URI {
+    /**
+     * check whether a URI is a known FHIR server. Checks the software from the metadata as a side effect
+     *
+     * @param uriString the URI string
+     * @return the URI string as a validated URI
+     */
+    fun validateUriIsKnownFhirServer(uriString: String): URI {
         val cleanUri = uriString.cleanUri()
         if (endpointServerMap.containsKey(cleanUri)) return cleanUri
         getServerSoftware(cleanUri)
         return cleanUri
     }
 
+    /**
+     * execute a request against the provided FHIR server, and parse to the specified
+     * type parameter using HAPI FHIR
+     *
+     * @param T the resource to parse as
+     * @param httpRequest the HttpRequest to execute
+     * @return the parsed resource as T
+     */
     @Throws(FhirServerError::class)
     inline fun <reified T : Resource> executeFhirStatementParsing(httpRequest: HttpRequest): T {
         val stringResponse =
@@ -78,17 +120,47 @@ class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
         }
     }
 
+    /**
+     * execute a request against the provided FHIR server by GET via uri, and parse to the specified
+     * type parameter using HAPI FHIR
+     *
+     * @param T the resource to parse as
+     * @param uri the (absolute) URI to GET from
+     * @return the parsed resource
+     */
     inline fun <reified T : Resource> executeFhirStatementParsing(uri: URI): T =
         HttpRequest.newBuilder(uri).addAcceptHeader().GET().build().let {
             executeFhirStatementParsing(it)
         }
 
     companion object {
+        /**
+         * the list of known servers by URIs
+         */
         private val endpointServerMap: MutableMap<URI, KnownFhirServer> = mutableMapOf()
     }
 }
 
+/**
+ * an exception that occurred during conversion of a FHIR resource
+ *
+ * @constructor
+ * instantiates an Exception
+ *
+ * @param message the descriptive message
+ * @param e the inner Exception
+ */
 open class TerminologyConversionError(message: String, e: Exception? = null) : Exception(message, e)
 
+/**
+ * an excpetion that occurred talking to a FHIR TS endpoint
+ *
+ * @property outcome the OperationOutcome encapsulated here
+ * @constructor
+ * instantiates an TerminologyConversionError
+ *
+ * @param message the descriptive message
+ * @param e the inner Exception
+ */
 class FhirServerError(message: String, val outcome: OperationOutcome? = null, e: Exception? = null) :
     TerminologyConversionError(message, e)

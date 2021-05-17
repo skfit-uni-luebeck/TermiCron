@@ -10,12 +10,28 @@ import org.hl7.fhir.r4.model.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+/**
+ * convert a FHIR resource to a ValueSetExpansion
+ *
+ * @property ingestProvider the ingest provider to use
+ */
 class FhirValueSetConverter(
     private val ingestProvider: FhirIngestProvider
 ) {
 
+    /**
+     * the logger instance for this class
+     */
     private val logger: Logger = LoggerFactory.getLogger(FhirValueSetConverter::class.java)
 
+    /**
+     * convert a bundle entry component to a FHIR resource
+     *
+     * @param bundleEntryComponent the bundle entry component
+     * @param bundle the bundle this resource is from
+     * @return the ValueSetExpansionOperation from the conversion
+     */
+    @Throws(UnsupportedResourceTypeException::class)
     fun convertBundleEntry(
         bundleEntryComponent: Bundle.BundleEntryComponent,
         bundle: Bundle
@@ -26,6 +42,12 @@ class FhirValueSetConverter(
             else -> throw UnsupportedResourceTypeException("the resource type ${resourceType.name} is not supported!")
         }
 
+    /**
+     * check the resurce type for a bundle entry component
+     *
+     * @param bundleEntryComponent the bundle entry component
+     * @return the resource type enum member
+     */
     private fun resourceTypeForBundleComponent(bundleEntryComponent: Bundle.BundleEntryComponent): ResourceType {
         when {
             bundleEntryComponent.hasLink() -> {
@@ -40,6 +62,13 @@ class FhirValueSetConverter(
         }
     }
 
+    /**
+     * convert a ValueSet (given as a BundleEntryComponent)
+     *
+     * @param bundleEntryComponent the bundle entry component, where resource is ValueSet
+     * @param bundle the bundle the component is from
+     * @return the converted ValueSetExpansion
+     */
     private fun convertValueSet(
         bundleEntryComponent: Bundle.BundleEntryComponent,
         bundle: Bundle
@@ -96,6 +125,13 @@ class FhirValueSetConverter(
 
     }
 
+    /**
+     * convert a CodeSystem (given as a BundleEntryComponent)
+     *
+     * @param bundleEntryComponent the bundle entry component, where resource is CodeSystem
+     * @param bundle the bundle the component is from
+     * @return the converted ValueSetExpansion
+     */
     private fun convertCodeSystem(
         bundleEntryComponent: Bundle.BundleEntryComponent,
         bundle: Bundle
@@ -135,7 +171,34 @@ class FhirValueSetConverter(
         )
     }
 
+    /**
+     * exception that signifies a BundleEntryComponent does not have the required links
+     *
+     * @constructor
+     * instantiates an Exception
+     *
+     * @param message the explanatory message
+     */
     class MissingLinkException(message: String) : Exception(message)
+
+    /**
+     * exception that signifies a ValueSet does not have an expansion, and the ingest providers
+     * does not support run-time VS expansions (due to a missing TS URL)
+     *
+     * @constructor
+     * instantiates an Exception
+     *
+     * @param message the explanatory message
+     */
     class MissingExpansionException(message: String) : Exception(message)
+
+    /**
+     * exception that signifies a BundleEntryComponent can not be converted, as it is of the wrong type
+     *
+     * @constructor
+     * instantiates an Exception
+     *
+     * @param message the explanatory message
+     */
     class UnsupportedResourceTypeException(message: String) : Exception(message)
 }

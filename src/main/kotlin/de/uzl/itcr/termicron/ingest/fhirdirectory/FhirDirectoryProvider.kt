@@ -17,6 +17,17 @@ import java.util.*
 import kotlin.NoSuchElementException
 import kotlin.UnsupportedOperationException
 
+/**
+ * ingest files from a directory for conversion
+ *
+ * @property directory the directory path
+ * @property expansionSupportHttpClientInitializer an optional function to provide to the HTTP client used for VS expansions
+ * @constructor
+ * implements a FhirIngestProvider
+ *
+ * @param fhirContext the HAPI FHIR context
+ * @param expansionSupportEndpoint the endpoint of the supporting TS
+ */
 @Suppress("UsePropertyAccessSyntax")
 class FhirDirectoryProvider(
     val directory: String,
@@ -25,8 +36,14 @@ class FhirDirectoryProvider(
     private val expansionSupportHttpClientInitializer: (HttpClient.Builder.() -> Unit)? = null,
 ) : FhirIngestProvider(fhirContext) {
 
+    /**
+     * the expansion support URI of a TS as an URI
+     */
     private val expansionSupportEndpoint: URI? = expansionSupportEndpoint?.let { URI.create("${it.trimEnd('/')}/") }
 
+    /**
+     * a logger instance
+     */
     private val logger: Logger = LoggerFactory.getLogger(FhirDirectoryProvider::class.java)
 
     override fun retrieveResourcesToConvert(): Bundle {
@@ -66,9 +83,20 @@ class FhirDirectoryProvider(
 
     override fun supportsExpansion(): Boolean = this.expansionSupportEndpoint != null
 
+    /**
+     * build a bundle with all valid resources from this directory
+     *
+     * @return the bundle
+     */
     fun buildDefaultBundle(): Bundle =
         this.buildBundleFromResources(this.filterFhirResources(this.getResourceFilenamesFromDirectory()))
 
+    /**
+     * build a bundle from a list of resource files
+     *
+     * @param resourceFiles the list of encapsulated resources
+     * @return the bundle with all (valid) resources
+     */
     fun buildBundleFromResources(resourceFiles: List<FhirResourceOnDisk>): Bundle {
         val onlyCodeSystemValueSet =
             resourceFiles.filter {
@@ -221,23 +249,6 @@ class FhirDirectoryProvider(
                 else -> throw FileTypeNotSupportedError("neither a code system nor a value set - has no canonical uri")
             }
 
-        /*/**
-         * get the canonical URI of the valueset. for a vs instance, this is identical to the url, while for CS it is given by the
-         * valueSet parameter - this has to be present for CodeSystems!
-         * @param fhirContext FhirContext the fhir context to use
-         * @return String the canonical url of the valueset
-         * @throws ValueSetIngestPipeline.MissingValueSetUrlException if the implicit VS url is missing in a codeSystem
-         * @throws FileTypeNotSupportedError
-         */
-        @Throws(ValueSetIngestPipeline.MissingValueSetUrlException::class, FileTypeNotSupportedError::class)
-        fun getCanonicalUriOfValueSet(fhirContext: FhirContext): String =
-            when (resourceType) {
-                ValueSetIngestPipeline.FhirResourceTypes.CODE_SYSTEM -> parseToCodeSystem(fhirContext).valueSet
-                    ?: throw ValueSetIngestPipeline.MissingValueSetUrlException("This CodeSystem does not have an implicit ValueSet defined - unsupported for synchronization!")
-                ValueSetIngestPipeline.FhirResourceTypes.VALUE_SET -> parseToValueSet(fhirContext).url
-                else -> throw FileTypeNotSupportedError("neither a code system nor a value set - has no canonical uri")
-            }*/
-
         /**
          * parse the resource to a code system
          * @param fhirContext FhirContext the fhir context
@@ -264,11 +275,5 @@ class FhirDirectoryProvider(
          */
         @Throws(ClassCastException::class)
         fun parseToBundle(fhirContext: FhirContext) = parseTo(fhirContext) as Bundle
-
-        /*fun getVersion(fhirContext: FhirContext): String = when (this.resourceType) {
-            ValueSetIngestPipeline.FhirResourceTypes.CODE_SYSTEM -> parseToCodeSystem(fhirContext).version
-            ValueSetIngestPipeline.FhirResourceTypes.VALUE_SET -> parseToValueSet(fhirContext).version
-            else -> throw FileTypeNotSupportedError("neither a CS nor a VS, cannot retrieve version")
-        }*/
     }
 }

@@ -12,6 +12,15 @@ import java.time.Instant
 import java.util.*
 import kotlin.NoSuchElementException
 
+/**
+ * ingest using SNOMED CT ECL query expression
+ *
+ * @property eclQuery the query
+ * @constructor
+ * implements a FhirIngestProvider
+ *
+ * @param fhirContext the HAPI FHIR context
+ */
 @Suppress("UsePropertyAccessSyntax")
 class SnomedCtEclIngestProvider(
     private val eclQuery: EclQuery,
@@ -19,6 +28,9 @@ class SnomedCtEclIngestProvider(
 ) :
     FhirIngestProvider(fhirContext) {
 
+    /**
+     * the logger instance for this class
+     */
     private val logger: Logger = LoggerFactory.getLogger(SnomedCtEclIngestProvider::class.java)
 
     override fun retrieveResourcesToConvert(): Bundle? {

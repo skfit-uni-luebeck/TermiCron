@@ -1,5 +1,8 @@
 package de.uzl.itcr.termicron.authentication
 
+/**
+ * interface for credentials to an MDR
+ */
 interface MdrCredential {
     /**
      * check if the credential is expired

@@ -19,6 +19,19 @@ import java.net.http.HttpClient
 import java.nio.file.Files
 import java.nio.file.Path
 
+/**
+ * provide FHIR resources from a FHIR package hosted on Simplifier (or another, NPM conformant FHIR Registry)
+ *
+ * @property packageName the name of the package
+ * @property packageVersion the version identifier (SemVer)
+ * @property simplifierRegistry the registry URL, uses Simplifier by default
+ * @constructor
+ * implements a FhirIngestProvider
+ *
+ * @param fhirContext the HAPI FHIR context
+ * @param expansionSupportEndpoint the endpoint of the FHIR TS for expansion
+ * @param expansionSupportHttpClientInitializer the initializer fun for the FHIR TS client
+ */
 class SimplifierIngestProvider(
     private val packageName: String,
     private var packageVersion: String? = null,
@@ -28,21 +41,52 @@ class SimplifierIngestProvider(
     expansionSupportHttpClientInitializer: (HttpClient.Builder.() -> Unit)? = null
 ) : FhirIngestProvider(fhirContext) {
 
+    /**
+     * the temporary directory where files are extracted to.
+     *
+     * On a UNIX system, this will be under /tmp or /var/tmp.
+     */
     private val packageDirectory = Files.createTempDirectory("${packageName}_$packageVersion")
+
+    /**
+     * an encapsulated directory provider - NPM packages are tarballs with files, so FhirDirectoryProvider works well
+     */
     private val temporaryDirIngestProvider = FhirDirectoryProvider(
         packageDirectory.resolve("package").toString(),
         fhirContext,
         expansionSupportEndpoint,
         expansionSupportHttpClientInitializer
     )
+
+    /**
+     * the logger instance for this class
+     */
     private val logger: Logger = LoggerFactory.getLogger(SimplifierIngestProvider::class.java)
 
     companion object {
-
+        /**
+         * the default URL for the simplifier NPM registry
+         */
         const val simplifierDefaultUrl = "https://packages.simplifier.net"
 
+        /**
+         * the jnpm service instance, instantiated only once
+         */
         private var jnpmInstance: JNPMService? = null
+
+        /**
+         * the download directory for jnpm
+         *
+         * On a UNIX system, this will be under /tmp or /var/tmp.
+         */
         val downloadDirectory: Path = Files.createTempDirectory("jnpm")
+
+        /**
+         * get a configured JNPM instance for the respective FHIR registry
+         *
+         * @param simplifierRegistry the registry URL
+         * @return the instantiated JNPM service
+         */
         private fun getJnpm(simplifierRegistry: URL): JNPMService {
             if (jnpmInstance == null) {
                 JNPMService.configure(
@@ -57,6 +101,11 @@ class SimplifierIngestProvider(
         }
     }
 
+    /**
+     * download the referenced package from the registry
+     *
+     * @return a DownloadResult enum member
+     */
     fun downloadPackageSimplifier(): DownloadResult {
         val packageInfo =
             getJnpm(simplifierRegistry).let { it.getPackageInfo(packageName) ?: return DownloadResult.NO_SUCH_PACKAGE }
@@ -107,6 +156,11 @@ class SimplifierIngestProvider(
         deleteDirectory(packageDirectory.toFile())
     }
 
+    /**
+     * delete a directory, and log the result
+     *
+     * @param directoryToDelete the directory File to delete
+     */
     private fun deleteDirectory(directoryToDelete: File) {
         logger.info("Deleting directory ${directoryToDelete.absolutePath}")
         if (!deleteDirectoryRecursively(directoryToDelete)) {
@@ -116,6 +170,12 @@ class SimplifierIngestProvider(
         }
     }
 
+    /**
+     * delete the directory recursively
+     *
+     * @param directoryToDelete the directory file
+     * @return true if the recursive deletion was successful
+     */
     private fun deleteDirectoryRecursively(directoryToDelete: File): Boolean {
         val allFiles = directoryToDelete.listFiles()
         if (allFiles != null) {
@@ -129,10 +189,26 @@ class SimplifierIngestProvider(
 
     }
 
+    /**
+     * enum class for the result of a registry download
+     */
     enum class DownloadResult {
+        /**
+         * no such version of the specified package exists in the registry
+         */
         NO_SUCH_VERSION,
+        /**
+         * the specified package name does not exist in the registry
+         */
         NO_SUCH_PACKAGE,
+        /**
+         * the package was successfully downloaded from the registry
+         */
         SUCCESS,
+
+        /**
+         * the download process was not successful
+         */
         ERROR
     }
 }

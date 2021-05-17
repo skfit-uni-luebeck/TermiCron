@@ -15,25 +15,51 @@ import org.slf4j.LoggerFactory
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 
+/**
+ * expand a FHIR ValueSet using a TS
+ *
+ * @property fhirContext the HAPI FHIR context
+ * @constructor
+ * create a new ValueSetTsExpander
+ *
+ * @param httpClientInitializer a function to pass to the HttpClient builder, for authentication etc.
+ * @param endpoint the TS endpoint
+ */
 class ValueSetTsExpander(
     httpClientInitializer: (HttpClient.Builder.() -> Unit)? = null,
     endpoint: String,
     private val fhirContext: FhirContext
 ) {
 
+    /**
+     * the logger instance for this class
+     */
     private val logger: Logger = LoggerFactory.getLogger(ValueSetTsExpander::class.java)
 
-    //private val endpoint = URI.create("${endpoint.trimEnd('/')}/")
+    /**
+     * the HTTP client for this class
+     */
     private val httpClient: HttpClient = StaticHelpers.httpClient(httpClientInitializer)
 
+    /**
+     * the FhirUtilities instance for this class
+     */
     private val fhirUtilities = FhirUtilities(httpClient, fhirContext)
-    private val endpoint = fhirUtilities.validateUriIsFhirServerEndpoint(endpoint)
 
+    /**
+     * FHIR TS endpoint for this class
+     */
+    private val endpoint = fhirUtilities.validateUriIsKnownFhirServer(endpoint)
+
+    /**
+     * expand a VS using the respective FHIR TS
+     *
+     * @param valueSet the ValueSet to expand
+     * @return the expanded FHIR VS
+     */
     @Throws(FhirServerError::class)
     fun expand(valueSet: ValueSet): ValueSet {
-        val requestUri = endpoint.resolve("ValueSet/\$expand").also {
-            //logger.info("expanding ValueSet ${valueSet.name} at $it")
-        }
+        val requestUri = endpoint.resolve("ValueSet/\$expand")
         checkForPCE(valueSet)
         val bodyString: String = when (fhirUtilities.getServerSoftware(endpoint)) {
             FhirUtilities.KnownFhirServer.SNOWSTORM -> {
@@ -52,10 +78,15 @@ class ValueSetTsExpander(
             .addAcceptHeader()
             .addPayloadHeader()
             .build()
-        //return requestFromServerParseFhir(httpClient, expandRequest, fhirContext)
         return fhirUtilities.executeFhirStatementParsing(expandRequest)
     }
 
+    /**
+     * check if a FHIR VS contains SNOMED CT post-coordinated expressions.
+     * These require special attention, so warning are generated, based on the detected FHIR TS implementations
+     *
+     * @param valueSet the ValueSet to verify
+     */
     private fun checkForPCE(valueSet: ValueSet) {
         val include = valueSet.compose.include ?: return
         val hasPce = include.any {
@@ -66,7 +97,7 @@ class ValueSetTsExpander(
             }
         }
         if (!hasPce) return
-        logger.warn("The ValueSet ${valueSet.url} ('${valueSet.name}') has SNOMED CT postcoordinated expressions in its definition.")
+        logger.warn("The ValueSet ${valueSet.url} ('${valueSet.name}') has SNOMED CT postcoordinated expressions (PCEs) in its definition.")
         when (val software = fhirUtilities.getServerSoftware(endpoint)) {
             FhirUtilities.KnownFhirServer.ONTOSERVER -> {
                 logger.warn("Ontoserver requires that PCEs are provided in a CodeSystem supplement. If this is not present, PCEs in ValueSets will not be included in the expansion.")
@@ -79,8 +110,7 @@ class ValueSetTsExpander(
 
             FhirUtilities.KnownFhirServer.HAPIFHIR, FhirUtilities.KnownFhirServer.VONK ->
                 logger.error("$software does not support SNOMED CT PCEs and results will be incomplete!")
-            else -> logger.warn("$software may not support SNOMED CT PCEs.")
+            else -> logger.warn("$software may not fully support SNOMED CT PCEs.")
         }
     }
-
 }

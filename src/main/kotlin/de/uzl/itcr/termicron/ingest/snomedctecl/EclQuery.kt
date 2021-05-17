@@ -15,6 +15,22 @@ import java.net.http.HttpRequest
 import java.time.Instant
 import java.util.*
 
+/**
+ * a ECL query against SNOMED CT on a specified TS
+ *
+ * @property ecl the ECL string
+ * @property snomedCtEdition the SNOMED CT edition
+ * @property snomedCtVersion the SNOMED CT version. If null, the TS will use the latest version of the respective edition available
+ * @property valueSetName the name of the resulting FHIR VS
+ * @property valueSetTitle the title of the resulting FHIR VS
+ * @property valueSetVersion the version of the resulting FHIR VS
+ * @property outputDirectory the directory to write the FHIR VS to. If null, the FHIR VS will not be written to disc
+ * @property fhirContext the HAPI FHIR context
+ * @constructor
+ * instantiates a EclQuery
+ *
+ * @param terminologyServerEndpoint the FHIR TS implementation to resolve ECL against
+ */
 @Suppress("HttpUrlsUsage")
 class EclQuery(
     val ecl: String,
@@ -28,18 +44,43 @@ class EclQuery(
     val fhirContext: FhirContext
 ) {
 
+    /**
+     * the logger instance for this class
+     */
     private val logger: Logger = LoggerFactory.getLogger(EclQuery::class.java)
 
+    /**
+     * the URL encoded ECL query
+     */
     private val eclUrlEncoded: String get() = URLEncoder.encode(ecl.trim(), "UTF-8")
 
+    /**
+     * the HttpClient instance for this class
+     */
     val httpClient: HttpClient = HttpClient.newBuilder().build()
 
+    /**
+     * the FHIR utilities instance
+     */
     private val fhirUtilities = FhirUtilities(httpClient, fhirContext)
 
+    /**
+     * the FHIR TS endpoint
+     */
     private val endpoint = URI.create("${terminologyServerEndpoint.trimEnd('/')}/")
 
+    /**
+     * url encode a string with UTF-8
+     *
+     * @param s the string to encode
+     */
     private fun urlEncode(s: String) = URLEncoder.encode(s, "UTF-8")
 
+    /**
+     * build a request URI for the ECL query
+     *
+     * @return the constructed URI, including edition, version and ?_fhir_vs=ecl/$ecl
+     */
     private fun buildRequestUri(): URI {
         val snomedVersionQualifier = snomedCtVersion?.let { "/version/$it" } ?: ""
         val snomedIdentifier =
@@ -50,6 +91,11 @@ class EclQuery(
         return endpoint.resolve(path)
     }
 
+    /**
+     * expand the ECL query using the configured FHIR TS
+     *
+     * @return
+     */
     fun requestExpansion(): ValueSet {
         val requestUri = buildRequestUri().also {
             logger.info("Expanding ECL expression at: $it")
@@ -70,21 +116,20 @@ class EclQuery(
         }
     }
 
-    private fun writeValueSet(valueSet: ValueSet) {
-        if (this.outputDirectory != null) {
-            try {
-                val outFile = outputDirectory.resolve("ValueSet-ECL_${valueSetName}_${valueSetVersion}.json")
-                fhirContext.newJsonParser()
-                    .setPrettyPrint(true)
-                    .encodeResourceToWriter(valueSet, outFile.bufferedWriter())
-                logger.info("Wrote expanded FHIR ValueSet to ${outFile.absolutePath}")
-            } catch (e: IOException) {
-                logger.error("Error writing expanded ECL expression to file")
-            }
-        } else {
-            logger.info("No FHIR output directory was specified, not writing expanded file.")
-        }
-    }
+    /**
+     * write the expanded ECL VS to disk, if the output directory was provided
+     *
+     * @param valueSet the VS to write
+     */
+    private fun writeValueSet(valueSet: ValueSet) = if (this.outputDirectory != null) try {
+        val outFile = outputDirectory.resolve("ValueSet-ECL_${valueSetName}_${valueSetVersion}.json")
+        fhirContext.newJsonParser()
+            .setPrettyPrint(true)
+            .encodeResourceToWriter(valueSet, outFile.bufferedWriter())
+        logger.info("Wrote expanded FHIR ValueSet to ${outFile.absolutePath}")
+    } catch (e: IOException) {
+        logger.error("Error writing expanded ECL expression to file")
+    } else logger.info("No FHIR output directory was specified, not writing expanded file.")
 
 
 }

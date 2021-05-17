@@ -29,19 +29,20 @@ class QL4MDRSynchronization(
     val logger = LoggerFactory.getLogger(QL4MDRSynchronization::class.java)
     private val client: HttpClient = StaticHelpers.httpClient()
 
-    override fun isPresent(vs: ValueSetExpansion): Boolean {
-        val ql4MdrQuery = ql4mdr {
-            query {
-                queryEntity("conceptSystem") {
-                    queryArguments {
-                        +("uri" to vs.canonicalUrl)
-                        +("version" to vs.businessVersion)
-                    }
-                    +"name"
+    private fun presenceQuery(vs: ValueSetExpansion) = ql4mdr {
+        query {
+            queryEntity("conceptSystem") {
+                queryArguments {
+                    +("uri" to vs.canonicalUrl)
+                    +("version" to vs.businessVersion)
                 }
+                +"name"
             }
         }
+    }
 
+    override fun isPresent(vs: ValueSetExpansion): Boolean {
+        val ql4MdrQuery = presenceQuery(vs)
         val response = sendGraphQlQuery(ql4MdrQuery.toString())
         val parsedJson = JSONQ(response.body().byteInputStream())
         val hasNoErrors = "errors" !in parsedJson.JSON().names()
@@ -50,17 +51,7 @@ class QL4MDRSynchronization(
     }
 
     override fun isCurrent(vs: ValueSetExpansion): Boolean {
-        val ql4MdrQuery = ql4mdr {
-            query {
-                queryEntity("conceptSystem") {
-                    queryArguments {
-                        +("uri" to vs.canonicalUrl)
-                        +("version" to vs.businessVersion)
-                    }
-                    +"name"
-                }
-            }
-        }
+        val ql4MdrQuery = presenceQuery(vs)
         val response = sendGraphQlQuery(ql4MdrQuery.toString())
         val parsedJson = JSONQ(response.body().byteInputStream())
         val hasNoErrors = "errors" !in parsedJson.JSON().names()
