@@ -4,11 +4,25 @@ import com.lectra.koson.arr
 import com.lectra.koson.obj
 import de.uzl.itcr.termicron.StaticHelpers
 import de.uzl.itcr.termicron.catalogmodel.ValueSetExpansion
-import de.uzl.itcr.termicron.output.MdrOutputResult
+import de.uzl.itcr.termicron.output.MdrOutput
 
+/**
+ * CentraXX MDR REST-based output. This generates JSON compliant to the API documentation as of CentraXX MDR 1.9.3
+ *
+ * @constructor
+ * implements CxxMdrOutput
+ *
+ * @param catalogType the catalog type to use in the generated catalog
+ */
 class CxxMdrOutputRest(catalogType: String) : CxxMdrOutput(catalogType) {
 
-    override fun outputCatalog(vs: ValueSetExpansion): MdrOutputResult {
+    /**
+     * render the ValueSet vs to a JSON catalog
+     *
+     * @param vs the ValueSet expansion
+     * @return the rendered JSON, as an encapsulated String
+     */
+    override fun outputCatalog(vs: ValueSetExpansion): MdrOutput.MdrOutputResult {
         val cxxOutput = obj {
             "caption" to obj {
                 "en" to obj {
@@ -20,10 +34,7 @@ class CxxMdrOutputRest(catalogType: String) : CxxMdrOutput(catalogType) {
                     "description" to vs.description
                 }
             }
-            //"code" to vs.title
             "code" to vs.nameUrlEncoded
-            // DONE only works for the creation not the update
-            //"uri" to null
             "uri" to buildCxxUrl(vs)
             "version" to vs.businessVersion
             "systemUrl" to vs.canonicalUrl
@@ -40,7 +51,6 @@ class CxxMdrOutputRest(catalogType: String) : CxxMdrOutput(catalogType) {
                             "description" to null
                         }
                     }
-                    //"uri" to null
                     "uri" to buildCxxUrl(vs, concept)
                     "code" to concept.code
                     "parent" to null
@@ -50,9 +60,14 @@ class CxxMdrOutputRest(catalogType: String) : CxxMdrOutput(catalogType) {
             }]
             "modificationTime" to null
         }
-        return MdrOutputResult(cxxOutput.pretty())
+        return MdrOutput.MdrOutputResult(cxxOutput.pretty())
     }
 
+    /**
+     * this outputs JSON
+     *
+     * @return the JSON MIME type
+     */
     override fun mimeType(): org.apache.tika.mime.MimeType =
         StaticHelpers.tikaConfig.mimeRepository.forName("application/json")
 }

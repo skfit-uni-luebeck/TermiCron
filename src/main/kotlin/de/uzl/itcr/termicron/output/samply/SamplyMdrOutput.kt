@@ -5,12 +5,20 @@ package de.uzl.itcr.termicron.output.samply
 import de.uzl.itcr.termicron.StaticHelpers
 import de.uzl.itcr.termicron.catalogmodel.ValueSetExpansion
 import de.uzl.itcr.termicron.output.MdrOutput
-import de.uzl.itcr.termicron.output.MdrOutputResult
 import org.apache.tika.mime.MimeType
 import org.redundent.kotlin.xml.xml
 
+/**
+ * render catalogs in Samply XML format
+ */
 class SamplyMdrOutput : MdrOutput {
-    override fun outputCatalog(vs: ValueSetExpansion): MdrOutputResult {
+    /**
+     * render the provided VS to a Samply MDR catalog via the provided schema
+     *
+     * @param vs the ValueSet to render
+     * @return the catalog as an encapsulated String
+     */
+    override fun outputCatalog(vs: ValueSetExpansion): MdrOutput.MdrOutputResult {
 
         val samplyOutput = xml("catalog") {
             xmlns = "http://schema.samply.de/mdr/common"
@@ -64,10 +72,15 @@ class SamplyMdrOutput : MdrOutput {
                 }
             }
         }
-        return MdrOutputResult(
+        return MdrOutput.MdrOutputResult(
             result = samplyOutput.toString(prettyFormat = true)
         )
     }
 
+    /**
+     * this class returns XML
+     *
+     * @return the XML MIME type
+     */
     override fun mimeType(): MimeType = StaticHelpers.tikaConfig.mimeRepository.forName("application/xml")
 }

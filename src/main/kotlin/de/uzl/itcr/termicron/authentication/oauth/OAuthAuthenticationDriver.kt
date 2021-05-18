@@ -2,11 +2,14 @@ package de.uzl.itcr.termicron.authentication.oauth
 
 import com.google.api.client.auth.oauth2.*
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
+//import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.http.GenericUrl
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import de.uzl.itcr.termicron.authentication.MdrAuthenticationDriver
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Driver for authentication against OAuth2-secured APIs
@@ -19,6 +22,8 @@ import de.uzl.itcr.termicron.authentication.MdrAuthenticationDriver
 class OAuthAuthenticationDriver(driverConfiguration: OAuthDriverConfiguration) : MdrAuthenticationDriver(
     driverConfiguration
 ) {
+
+    val logger: Logger = LoggerFactory.getLogger(OAuthAuthenticationDriver::class.java)
 
     /**
      * authentication against the authorization endpoint is using basic auth in the Authorization header
@@ -48,12 +53,13 @@ class OAuthAuthenticationDriver(driverConfiguration: OAuthDriverConfiguration) :
     /**
      * authorize using provided client ID/client secret
      */
-    private val clientParametersAuthentication = ClientParametersAuthentication(driverConfiguration.clientId, driverConfiguration.clientSecret)
+    private val clientParametersAuthentication =
+        ClientParametersAuthentication(driverConfiguration.clientId, driverConfiguration.clientSecret)
 
     /**
      * the secret credential, in "raw" form. Used for re-issuing of tokens
      */
-    private var requestedOauthAccessToken : Credential? = null
+    private var requestedOauthAccessToken: Credential? = null
 
     /**
      * login to the MDR if required. This calls the "refresh" method of existing tokens, if applicable,
@@ -80,6 +86,7 @@ class OAuthAuthenticationDriver(driverConfiguration: OAuthDriverConfiguration) :
                 val receiver = LocalServerReceiver.Builder()
                     .setHost(conf.callbackDomain)
                     .setPort(conf.callbackPort)
+                    .setCallbackPath(conf.callbackPath)
                     .build()
                 requestedOauthAccessToken = AuthorizationCodeInstalledApp(codeFlow, receiver).authorize(null)
             }
@@ -91,6 +98,7 @@ class OAuthAuthenticationDriver(driverConfiguration: OAuthDriverConfiguration) :
             this.requestedOauthAccessToken!!.accessToken,
             this.requestedOauthAccessToken!!.expiresInSeconds
         )
+        logger.info("Successfully logged into the MDR")
     }
 
     /**

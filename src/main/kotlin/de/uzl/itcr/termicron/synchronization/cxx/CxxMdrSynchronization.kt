@@ -4,7 +4,6 @@ import de.uzl.itcr.termicron.StaticHelpers
 import de.uzl.itcr.termicron.authentication.MdrAuthenticationDriver
 import de.uzl.itcr.termicron.catalogmodel.ValueSetExpansion
 import de.uzl.itcr.termicron.configuration.CxxMdrConfiguration
-import de.uzl.itcr.termicron.configuration.MdrConfiguration
 import de.uzl.itcr.termicron.output.cxx.CxxMdrOutputRest
 import de.uzl.itcr.termicron.synchronization.MdrSynchronization
 import org.apache.http.HttpStatus
@@ -13,44 +12,65 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
+/**
+ * implement CentraXX MDR synchronization via the REST api
+ *
+ * @property authDriver the authentication driver for CentraXX MDR
+ * @property mdrConfiguration the configuration of the system
+ * @property outputRest the output provider
+ */
 class CxxMdrSynchronization(
     private val authDriver: MdrAuthenticationDriver,
     private val mdrConfiguration: CxxMdrConfiguration,
     private val outputRest: CxxMdrOutputRest
 ) : MdrSynchronization() {
 
+    /**
+     * the logger for this class
+     */
     private val log = LoggerFactory.getLogger(CxxMdrSynchronization::class.java)
 
+    /**
+     * the HttpClient instance for this class
+     */
     private val client: HttpClient = StaticHelpers.httpClient()
 
-/*    override fun synchro(vs: ValueSetExpansion): SynchronizationOutcome {
-        val isPresent = isPresent(vs) //store once to prevent multiple requests
-        return when {
-            isPresent && isCurrent(vs) -> SynchronizationOutcome.NO_NEED
-            isPresent -> if (update(vs)) SynchronizationOutcome.UPDATED else SynchronizationOutcome.ERROR //implies !isCurrent(vs)
-            create(vs) -> SynchronizationOutcome.CREATED
-            else -> SynchronizationOutcome.ERROR
-        }
-    }*/
-
+    /**
+     * check if the VS is present, by requesting /catalogs/catalog by code and version
+     *
+     * @param vs the VS
+     * @return true if the VS is present
+     */
     override fun isPresent(vs: ValueSetExpansion): Boolean {
         val request = HttpRequest.newBuilder()
             .uri(mdrConfiguration.buildApiUrl("/catalogs/catalog?code=${vs.titleUrlEncoded}&version=${vs.businessVersionUrlEncoded}"))
             .header("Authorization", authDriver.currentCredential().encodeCredentialToAuthorizationHeader())
             .build()
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        return (response.statusCode() == HttpStatus.SC_OK).also { log.info("expanded VS '${vs.title} @ version '${vs.businessVersion}' is ${if (it) "present" else "not present"}") }
+        val response = client.send(request, HttpResponse.BodyHandlers.discarding())
+        return (response.statusCode() == HttpStatus.SC_OK).also { log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' is ${if (it) "present" else "not present"}") }
     }
 
+    /**
+     * check if the VS is current, by requesting catalogs/catalog by code and version
+     *
+     * @param vs the ValueSet to check
+     * @return true if a ValueSet of this version is present
+     */
     override fun isCurrent(vs: ValueSetExpansion): Boolean {
         val request = HttpRequest.newBuilder()
             .uri(mdrConfiguration.buildApiUrl("catalogs/catalog?code=${vs.titleUrlEncoded}&version=${vs.businessVersionUrlEncoded}"))
             .header("Authorization", authDriver.currentCredential().encodeCredentialToAuthorizationHeader())
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.discarding())
-        return (response.statusCode() == HttpStatus.SC_OK).also { log.info("expanded VS '${vs.title} @ version '${vs.businessVersion}' is ${if (it) "current" else "not current"}") }
+        return (response.statusCode() == HttpStatus.SC_OK).also { log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' is ${if (it) "current" else "not current"}") }
     }
 
+    /**
+     * create a ValueSet in this MDR
+     *
+     * @param vs the VS to create
+     * @return true if the VS could be successfully created
+     */
     override fun create(vs: ValueSetExpansion): Boolean {
         val convertedValueSet = outputRest.outputCatalog(vs)
         return if (convertedValueSet.success) {
@@ -61,17 +81,20 @@ class CxxMdrSynchronization(
                 .POST(HttpRequest.BodyPublishers.ofString(convertedValueSet.result))
                 .build()
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            // TODO Error Handling: no right to create catalogs
-/*            println(response.body())
-            println(response.statusCode())*/
             (response.statusCode() == HttpStatus.SC_CREATED).also {
-                log.info("expanded VS '${vs.title} @ version '${vs.businessVersion}' was ${if (it) "successfully" else "not successfully"} created")
+                log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' was ${if (it) "successfully" else "not successfully"} created")
             }
         } else {
             false
         }
     }
 
+    /**
+     * update a VS in the MDR
+     *
+     * @param vs the VS to update
+     * @return true if the VS could be successfully updated
+     */
     override fun update(vs: ValueSetExpansion): Boolean {
         val convertedValueSet = outputRest.outputCatalog(vs)
         return if (convertedValueSet.success) {
@@ -82,10 +105,8 @@ class CxxMdrSynchronization(
                 .PUT(HttpRequest.BodyPublishers.ofString(convertedValueSet.result))
                 .build()
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-/*            println(response.body())
-            println(response.statusCode())*/
             (response.statusCode() == HttpStatus.SC_OK).also {
-                log.info("expanded VS '${vs.title} @ version '${vs.businessVersion}' was ${if (it) "successfully" else "not successfully"} updated")
+                log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' was ${if (it) "successfully" else "not successfully"} updated")
             }
         } else {
             false

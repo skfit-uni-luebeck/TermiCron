@@ -3,12 +3,35 @@ package de.uzl.itcr.termicron.output.ql4mdr
 import de.uzl.itcr.termicron.StaticHelpers
 import de.uzl.itcr.termicron.catalogmodel.ValueSetExpansion
 import de.uzl.itcr.termicron.output.MdrOutput
-import de.uzl.itcr.termicron.output.MdrOutputResult
 import org.apache.tika.mime.MimeType
 
+/**
+ * render a catalog to a QL4MDR mutation via the custom DSL
+ */
 class QL4MDRMdrOutput : MdrOutput {
 
-    override fun outputCatalog(vs: ValueSetExpansion): MdrOutputResult {
+    /**
+     * render the provided ValueSet to a GraphQL query that looks like this:
+     *
+     * ```
+     * mutation {
+     *   createConceptSystem (
+     *     ...
+     *     concepts: [
+     *       {
+     *         ...
+     *       }
+     *     ]
+ *       ) {
+     *     name
+     *   }
+     * }
+     * ```
+     *
+     * @param vs the ValueSet to render
+     * @return the encapsulated String
+     */
+    override fun outputCatalog(vs: ValueSetExpansion): MdrOutput.MdrOutputResult {
         val ql4MdrMutation = ql4mdr {
             mutation {
                 mutationNode("createConceptSystem", listOf("name")) {
@@ -28,9 +51,15 @@ class QL4MDRMdrOutput : MdrOutput {
                 }
             }
         }
-        return MdrOutputResult(ql4MdrMutation.toString())
+        return MdrOutput.MdrOutputResult(ql4MdrMutation.toString())
     }
 
-    override fun mimeType(): MimeType = StaticHelpers.tikaConfig.mimeRepository.forName("application/json")
+    /**
+     * this returns GraphQL
+     *
+     * @return the GraphQL MIME type
+     */
+    override fun mimeType(): MimeType = StaticHelpers.tikaConfig
+        .mimeRepository.forName("application/graphql")
 
 }

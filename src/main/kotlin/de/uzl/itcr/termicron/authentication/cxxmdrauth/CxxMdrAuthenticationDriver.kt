@@ -26,7 +26,7 @@ class CxxMdrAuthenticationDriver(cxxMdrAuthConfiguration: CxxMdrAuthConfiguratio
 
     private val log = LogFactory.getLog(CxxMdrAuthenticationDriver::class.java)
 
-    @Throws(IOException::class, InterruptedException::class)  // TODO
+    @Throws(IOException::class, InterruptedException::class)
     override fun loginToMdr() {
         val response = httpClient.send(loginRequest, HttpResponse.BodyHandlers.ofInputStream())
         if (response.statusCode() == HttpStatus.SC_OK) {

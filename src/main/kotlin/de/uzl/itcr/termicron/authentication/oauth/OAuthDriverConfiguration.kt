@@ -1,7 +1,6 @@
 package de.uzl.itcr.termicron.authentication.oauth
 
 import de.uzl.itcr.termicron.authentication.AuthenticationConfiguration
-import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientProperties
 import java.net.URL
 
 /**
@@ -11,6 +10,7 @@ import java.net.URL
  * @property clientSecret the client secret
  * @property callbackDomain the callback domain the embedded webserver listens on. Genere
  * @property callbackPort the port the callback listens on.
+ * @property callbackPath the path the callback listens on
  * @constructor
  * implements an AuthenticationConfiguration
  *
@@ -20,6 +20,24 @@ class OAuthDriverConfiguration(
     authEndpoint: URL,
     val clientId: String,
     val clientSecret: String,
-    val callbackDomain: String = "127.0.0.1",
-    val callbackPort: Int = 8080
-) : AuthenticationConfiguration(authEndpoint)
+    val callbackDomain: String = defaultCallbackDomain,
+    val callbackPort: Int = defaultCallbackPort,
+    val callbackPath: String = defaultCallbackPath
+) : AuthenticationConfiguration(authEndpoint) {
+    companion object {
+        /**
+         * the default domain of the callback
+         */
+        const val defaultCallbackDomain = "127.0.0.1"
+
+        /**
+         * the default port of the callback
+         */
+        const val defaultCallbackPort = 8081
+
+        /**
+         * the default path of the callback
+         */
+        const val defaultCallbackPath = "/"
+    }
+}
