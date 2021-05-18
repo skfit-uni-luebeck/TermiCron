@@ -73,4 +73,7 @@ tasks.withType<Test> {
 
 configurations.all {
     exclude("org.slf4j", "slf4j-log4j12")
+    //this dependency is pulled in by kotlin-jsonq, but it's deprecated.
+    //stdlib-jdk8 is already on the classpath and compatible!
+    exclude("org.jetbrains.kotlin", "kotlin-stdlib-jre8")
 }
