@@ -27,15 +27,19 @@ Currently, the following input methods are supported:
 
 Currently, we support the following MDR formats:
 
-1. The open-source [Samply.MDR](https://pubmed.ncbi.nlm.nih.gov/30147039/)
+1. The open-source [Samply.MDR](https://pubmed.ncbi.nlm.nih.gov/30147039/) ([repo](https://bitbucket.org/medicalinformatics/mig.samply.mdr.gui))
 2. The commercial [CentraXX MDR](https://www.kairos.de/en/products/centraxx-mdr/)
-3. The federated MDR query language [QL4MDR](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6421684/)
+3. The federated MDR query language [QL4MDR](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6421684/) ([repo](https://github.com/itcr-uni-luebeck/QL4MDR))
 
 ### Customization & Contributions
 
 Adding support to new input and output formats is easy! We have implemented the system in Kotlin to be as generic as possible. You can add your own input providers, authentication drivers, output serializers and synchronization engines. We welcome feedback and contributions!
 
 The software is licensed under the GNU Affero General Public License (AGPL). We ask that customizations of our software be licensed under the same terms of that license. This means in particular that source code must be made available for forks of the software.
+
+### Concept
+
+![TermiCron Concept](termicron.png)
 
 ## Running
 
