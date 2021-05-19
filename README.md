@@ -12,8 +12,6 @@ This work is the subject of a paper submitted to MedInfo 2021:
 Wiedekopf, J., Ulrich, H., Drenkhahn, C., Kock-Schoppenhauer, A., & Ingenerf, J. (submitted). TermiCron – Bridging the Gap between FHIR Terminology Servers and Metadata Repositories. MedInfo 2021. 
 ```
 
-If you are interested in the preprint, please get in touch with the authors.
-
 ## Overview
 
 ### Input
