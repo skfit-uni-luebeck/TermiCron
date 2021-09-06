@@ -13,7 +13,7 @@ import de.uzl.itcr.termicron.authentication.cxxmdrauth.CxxMdrAuthenticationDrive
 import de.uzl.itcr.termicron.authentication.cxxmdrauth.CxxMdrAuthConfiguration
 import de.uzl.itcr.termicron.authentication.oauth.OAuthAuthenticationDriver
 import de.uzl.itcr.termicron.authentication.oauth.OAuthDriverConfiguration
-import de.uzl.itcr.termicron.bundlebuilder.BundleBuilder
+import de.uzl.itcr.termicron.bundlebuilder.BundleBuilderController
 import de.uzl.itcr.termicron.configuration.ConversionPipeline
 import de.uzl.itcr.termicron.configuration.CxxMdrConfiguration
 import de.uzl.itcr.termicron.configuration.QL4MDRConfiguration
@@ -52,7 +52,8 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
      * and we make sure that (required) is shown for all required arguments
      */
     init {
-        subcommands(Ingest(fhirContext, log), BundleBuilderCommand(fhirContext, log))
+        subcommands(Ingest(fhirContext, log))
+        //subcommands(Ingest(fhirContext, log), BundleBuilderCommand(fhirContext, log))
         context {
             helpFormatter = CliktHelpFormatter(showRequiredTag = true)
         }
@@ -765,7 +766,7 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
             .required()
     }
 
-    class BundleBuilderCommand(
+    /*class BundleBuilderCommand(
         val fhirContext: FhirContext,
         val log: Logger
     ) : CliktCommand(
@@ -778,9 +779,9 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
 
         override fun run() {
             log.info("Starting Bundle Builder CUI")
-            BundleBuilder(inputFhirServers, log).runBundleBuilder()
+            BundleBuilderController(inputFhirServers, log).runBundleBuilder()
         }
-    }
+    }*/
 }
 
 /**

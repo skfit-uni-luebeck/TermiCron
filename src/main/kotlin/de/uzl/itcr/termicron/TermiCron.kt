@@ -2,33 +2,44 @@ package de.uzl.itcr.termicron
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 
-/**
- * the base application logger
- */
-private val log: Logger = LoggerFactory.getLogger(TermiCron::class.java)
-
-/**
- * the HAPI FHIR context, which will be initialized exactly once on assignment
- */
-private val fhirContext = StaticHelpers.fhirContext
+const val profileTermicron = "termicron"
 
 /**
  * wrap TermiCron's CLI as a Spring Boot application
  */
 @SpringBootApplication
-class TermiCron {
+@ConfigurationPropertiesScan
+class TermiCron(
+    @Value("\${spring.profiles.active}")
+    val activeProfile: String
+) {
+    /**
+     * the base application logger
+     */
+    @Bean
+    fun log(): Logger = LoggerFactory.getLogger(TermiCron::class.java)
+
+    /**
+     * the HAPI FHIR context, which will be initialized exactly once
+     */
+    @Bean
+    fun fhirContext() = StaticHelpers.fhirContext
 
     /**
      * run the TermiCron CLI main method using the provided arguments
      */
     @Bean
     fun init() = CommandLineRunner { args ->
-        TermiCronConsoleApplication(fhirContext, log).main(args)
+        val profiles = activeProfile.toLowerCase()
+        if (profiles.contains(profileTermicron)) TermiCronConsoleApplication(fhirContext(), log()).main(args)
+        //bundle builder controller starts automatically, if the profile is provided
     }
 
 }
