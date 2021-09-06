@@ -1,0 +1,16 @@
+spring:
+  profiles:
+    default:
+      - termicron
+      - bundlebuilder
+  main:
+    banner-mode: off
+logging:
+  level:
+    org: info
+
+bundlebuilder:
+  defaults:
+    default-servers:
+      - https://ontoserver.imi.uni-luebeck.de/fhir
+      - https://ontoserver.imi.uni-luebeck.de/koeln/fhir

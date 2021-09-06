@@ -26,11 +26,14 @@ repositories {
 
 val hapiVersion = "5.2.0"
 
+val springSessionVersion = "2.5.2"
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter:$springVersion")
     implementation("org.springframework.boot:spring-boot-starter-mustache:$springVersion")
     implementation("org.springframework.boot:spring-boot-starter-web:$springVersion")
-    implementation("org.springframework.session:spring-session-core:$springVersion")
+    implementation("org.springframework.session:spring-session-core:$springSessionVersion")
+    developmentOnly("org.springframework.boot:spring-boot-devtools:$springVersion")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.junit.jupiter:junit-jupiter:5.7.2")

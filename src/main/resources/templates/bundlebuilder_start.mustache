@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>TermiCron Bundle Builder</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css"
+          integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <style>
+        .pure-g.grid-wrapper {
+            padding: 1%;
+        }
+
+        input.input-endpoint {
+            width: inherit;
+        }
+    </style>
+    <!--suppress ES6ConvertVarToLetConst -->
+    <script type="text/javascript">
+        var numberOfEndpoints = 0;
+        $(document).ready(function() {
+
+            $('#addEndpoint').click(function() {
+                appendEndpoint("");
+            });
+        })
+
+        function appendEndpoint(defaultValue = "") {
+            let id = numberOfEndpoints + 1;
+            $("#group-endpoints").append(`
+ <div class="pure-u-3-4 pure-control-group group-endpoint" id="group-endpoint-${id}">
+    <label for="endpoint-${id}">Endpoint ${id}</label>
+    <input type="text" id="endpoint-${id}" value="${defaultValue}" name="endpoint-${id}" class="input-endpoint">
+    <input type="button" class="pure-button" value="Remove"
+           onclick="handleRemoveEndpointClick('group-endpoint-${id}')">
+</div>
+ `);
+            numberOfEndpoints++;
+        }
+
+        function handleRemoveEndpointClick(id) {
+            $('#' + id).remove();
+            numberOfEndpoints=0;
+            let nodes = $("#group-endpoints").find("input.input-endpoint");
+            let values = [];
+            for (const currentNode of nodes) {
+                values.push($(currentNode).val());
+            }
+            $("#group-endpoints").empty();
+            for (const newNodeValue of values) {
+                appendEndpoint(newNodeValue)
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="pure-g grid-wrapper">
+    <div class="pure-u-1">
+        <h1>TermiCron Bundle Builder</h1>
+        <h2>Step 1: Enter the endpoints to query.</h2>
+    </div>
+    <div class="pure-u-1">
+        <!--suppress HtmlUnknownTarget -->
+        <form class="pure-form pure-form-aligned" method="POST" action="/bundlebuilder/query" id="form-endpoints">
+            <div id="group-endpoints">
+                {{#defaultServers}}
+                    <script type="text/javascript">
+                        appendEndpoint("{{url}}")
+                    </script>
+                {{/defaultServers}}
+            </div>
+            <div class="pure-u-1 pure-control-group" id="group-add-submit">
+                <input type="button" class="pure-button" id="addEndpoint"
+                       value="Add Endpoint">
+                <input type="submit" class="pure-button pure-button-primary" value="Continue...">
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
