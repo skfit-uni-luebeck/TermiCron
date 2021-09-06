@@ -14,7 +14,7 @@ application {
 
 group = "de.uzl.itcr"
 version = "1.0.0"
-java.sourceCompatibility = JavaVersion.VERSION_11
+java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenCentral()
@@ -55,7 +55,7 @@ dependencies {
     implementation("com.squareup.retrofit2:adapter-rxjava2:2.7.2")
     implementation("com.squareup.retrofit2:converter-jackson:2.7.2")
     implementation("ninja.sakib:kotlin-jsonq:v0.2")
-
+    implementation("com.googlecode.lanterna:lanterna:3.1.1")
 }
 
 

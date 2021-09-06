@@ -13,6 +13,7 @@ import de.uzl.itcr.termicron.authentication.cxxmdrauth.CxxMdrAuthenticationDrive
 import de.uzl.itcr.termicron.authentication.cxxmdrauth.CxxMdrAuthConfiguration
 import de.uzl.itcr.termicron.authentication.oauth.OAuthAuthenticationDriver
 import de.uzl.itcr.termicron.authentication.oauth.OAuthDriverConfiguration
+import de.uzl.itcr.termicron.bundlebuilder.BundleBuilder
 import de.uzl.itcr.termicron.configuration.ConversionPipeline
 import de.uzl.itcr.termicron.configuration.CxxMdrConfiguration
 import de.uzl.itcr.termicron.configuration.QL4MDRConfiguration
@@ -42,32 +43,19 @@ import java.net.URL
  * @property fhirContext the HAPI FHIR context
  * @property log the logger of the application
  */
-class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log: Logger) : CliktCommand(
+class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log: Logger) : NoOpCliktCommand(
     printHelpOnEmptyArgs = true
 ) {
-
-    /**
-     * the conversion pipeline instance
-     */
-    private val pipeline by findOrSetObject { ConversionPipeline() }
 
     /**
      * we provide the Ingest context as the only subcommand,
      * and we make sure that (required) is shown for all required arguments
      */
     init {
-        subcommands(Ingest(fhirContext, log))
+        subcommands(Ingest(fhirContext, log), BundleBuilderCommand(fhirContext, log))
         context {
             helpFormatter = CliktHelpFormatter(showRequiredTag = true)
         }
-    }
-
-    /**
-     * called when the Clikt app is run
-     */
-    override fun run() {
-        log.info("configuring pipeline")
-        log.info(pipeline.toString())
     }
 
     /**
@@ -80,9 +68,15 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
      *
      * @param log the logger
      */
-    class Ingest(val fhirContext: FhirContext, log: Logger) : NoOpCliktCommand(
+    class Ingest(val fhirContext: FhirContext, private val log: Logger) : CliktCommand(
         printHelpOnEmptyArgs = true,
     ) {
+
+        /**
+         * the conversion pipeline instance
+         */
+        private val pipeline by findOrSetObject { ConversionPipeline() }
+
         init {
             subcommands(
                 Directory(fhirContext, log),
@@ -90,6 +84,14 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
                 Simplifier(fhirContext, log),
                 SnomedCtEcl(fhirContext, log)
             )
+        }
+
+        /**
+         * called when the Clikt app is run
+         */
+        override fun run() {
+            log.info("configuring pipeline")
+            log.info(pipeline.toString())
         }
 
         /**
@@ -761,6 +763,23 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
         val outputPath by option("--output", "-o")
             .path(mustExist = false)
             .required()
+    }
+
+    class BundleBuilderCommand(
+        val fhirContext: FhirContext,
+        val log: Logger
+    ) : CliktCommand(
+        printHelpOnEmptyArgs = true
+    ) {
+
+        private val inputFhirServers: List<String> by option(
+            "--fhir-server"
+        ).multiple(required = true)
+
+        override fun run() {
+            log.info("Starting Bundle Builder CUI")
+            BundleBuilder(inputFhirServers, log).runBundleBuilder()
+        }
     }
 }
 
