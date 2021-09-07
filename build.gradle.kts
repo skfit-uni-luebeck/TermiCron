@@ -68,7 +68,6 @@ dependencies {
     @Suppress("GradlePackageUpdate")
     implementation("com.squareup.retrofit2:converter-jackson:2.7.2")
     implementation("ninja.sakib:kotlin-jsonq:v0.2")
-    implementation("com.googlecode.lanterna:lanterna:3.1.1")
 
     kapt("org.springframework.boot:spring-boot-configuration-processor:$springVersion")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor:$springVersion")

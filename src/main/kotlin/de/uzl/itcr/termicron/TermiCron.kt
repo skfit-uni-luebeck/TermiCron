@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import java.util.*
 
 const val profileTermicron = "termicron"
 
@@ -37,7 +38,7 @@ class TermiCron(
      */
     @Bean
     fun init() = CommandLineRunner { args ->
-        val profiles = activeProfile.toLowerCase()
+        val profiles = activeProfile.lowercase(Locale.getDefault())
         if (profiles.contains(profileTermicron)) TermiCronConsoleApplication(fhirContext(), log()).main(args)
         //bundle builder controller starts automatically, if the profile is provided
     }
