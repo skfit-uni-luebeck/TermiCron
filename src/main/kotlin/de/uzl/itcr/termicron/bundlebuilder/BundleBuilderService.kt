@@ -69,15 +69,15 @@ class BundleBuilderService(
         fun filterResources(selector: (ReferenceList) -> List<Reference>) =
             resources.map(selector).flatten().filter { it.id in selectedIdList }
 
-        fun linksForBundleEntry(resource: IBaseResource): List<Bundle.BundleLinkComponent> {
+        fun linksForBundleEntry(resource: IBaseResource, fullUrl: String): List<Bundle.BundleLinkComponent> {
             val links = when (resource) {
                 is CodeSystem -> mapOf(
                     "canonical" to resource.valueSet,
-                    "CodeSystem" to resource.url
+                    "CodeSystem" to fullUrl
                 )
                 is ValueSet -> mapOf(
                     "canonical" to resource.url,
-                    "ValueSet" to resource.url
+                    "ValueSet" to fullUrl
                 )
                 else -> throw IllegalArgumentException("resource type ${resource.fhirType()} is not supported!")
             }
@@ -95,7 +95,7 @@ class BundleBuilderService(
             entry = selectedResources.map { ref ->
                 Bundle.BundleEntryComponent().apply {
                     fullUrl = ref.reference
-                    link.addAll(linksForBundleEntry(ref.resource))
+                    link.addAll(linksForBundleEntry(ref.resource, ref.reference))
                 }
             }
             total = entry.size

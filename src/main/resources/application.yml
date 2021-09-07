@@ -14,3 +14,12 @@ bundlebuilder:
     default-servers:
       - https://ontoserver.imi.uni-luebeck.de/fhir
       - https://ontoserver.imi.uni-luebeck.de/koeln/fhir
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: altport
+server:
+  port: 8000

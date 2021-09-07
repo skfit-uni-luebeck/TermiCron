@@ -24,7 +24,7 @@
  <div class="pure-u-3-4 pure-control-group group-endpoint" id="group-endpoint-${id}">
     <label for="endpoint-${id}">Endpoint ${id}</label>
     <input type="text" id="endpoint-${id}" value="${defaultValue}" name="endpoint-${id}" class="input-endpoint">
-    <input type="button" class="pure-button" value="Remove"
+    <input type="button" class="pure-button button-warning" value="Remove"
            onclick="handleRemoveEndpointClick('group-endpoint-${id}')">
 </div>
  `);
@@ -63,7 +63,7 @@
                 {{/defaultServers}}
             </div>
             <div class="pure-u-1 pure-control-group" id="group-add-submit">
-                <input type="button" class="pure-button" id="addEndpoint"
+                <input type="button" class="pure-button button-secondary" id="addEndpoint"
                        value="Add Endpoint">
                 <input type="submit" class="pure-button pure-button-primary" value="Continue...">
             </div>
