@@ -36,6 +36,7 @@ class StaticHelpers {
         fun httpClient(initializer: (HttpClient.Builder.() -> Unit)? = null): HttpClient =
             HttpClient.newBuilder().apply {
                 version(HttpClient.Version.HTTP_1_1)
+                followRedirects(HttpClient.Redirect.ALWAYS)
                 initializer?.invoke(this)
             }
                 .connectTimeout(Duration.ofSeconds(20))
