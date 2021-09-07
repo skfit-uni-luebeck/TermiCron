@@ -10,7 +10,7 @@ import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import java.util.*
 
-const val profileTermicron = "termicron"
+const val springProfileTermicron = "termicron"
 
 /**
  * wrap TermiCron's CLI as a Spring Boot application
@@ -39,7 +39,7 @@ class TermiCron(
     @Bean
     fun init() = CommandLineRunner { args ->
         val profiles = activeProfile.lowercase(Locale.getDefault())
-        if (profiles.contains(profileTermicron)) TermiCronConsoleApplication(fhirContext(), log()).main(args)
+        if (profiles.contains(springProfileTermicron)) TermiCronConsoleApplication(fhirContext(), log()).main(args)
         //bundle builder controller starts automatically, if the profile is provided
     }
 

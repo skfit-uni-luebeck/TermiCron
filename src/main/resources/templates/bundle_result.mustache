@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!--suppress HtmlUnknownTarget -->
+<html lang="en">
+<head>
+    <title>TermiCron BundleBuilder</title>
+    {{> fragments/style}}
+    <link rel="stylesheet"
+          href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
+<body>
+<div class="pure-g grid-wrapper">
+    <div class="pure-u-1">
+        <h1>TermiCron Bundle Builder</h1>
+        <h2>Step 3: Bundle Result</h2>
+    </div>
+    <div class="pure-u-1">
+        <pre><code>{{{bundleString}}}</code></pre>
+    </div>
+    <div class="pure-u-1">
+        <form method="get" action="/">
+            <input type="hidden" name="">
+            <input type="submit" value="Start Over" class="pure-button">
+        </form>
+    </div>
+    <hr/>
+    <div class="pure-u-1">
+        <h3>Create bundle on endpoint</h3>
+
+        <div class="pure-u-1-2">
+            <form class="pure-form" action="/create-bundle" method="post">
+                <!--<input type="hidden" name="bundle" value="{{bundleString}}">-->
+                <div class="pure-button-group">
+                    {{#endpoints}}
+                        <input type="submit" name="submit" value="{{.}}" class="pure-button pure-button-primary">
+                    {{/endpoints}}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</head>
+</html>

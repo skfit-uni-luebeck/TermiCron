@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="JavaScriptLibraryMappings">
-    <file url="file://$PROJECT_DIR$/src/main" libraries="{jquery-3.6.0, purecss}" />
+    <file url="file://$PROJECT_DIR$" libraries="{c1232f4dfb, default, highlight}" />
+    <file url="file://$PROJECT_DIR$/build/generated/source/kapt/main" libraries="{c1232f4dfb, default, highlight}" />
+    <file url="file://$PROJECT_DIR$/build/generated/source/kapt/test" libraries="{c1232f4dfb, default, highlight}" />
+    <file url="file://$PROJECT_DIR$/build/generated/source/kaptKotlin/main" libraries="{c1232f4dfb, default, highlight}" />
+    <file url="file://$PROJECT_DIR$/build/generated/source/kaptKotlin/test" libraries="{c1232f4dfb, default, highlight}" />
+    <file url="file://$PROJECT_DIR$/src/main" libraries="{c1232f4dfb, default, highlight, jquery-3.6.0, purecss}" />
   </component>
 </project>

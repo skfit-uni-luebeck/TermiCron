@@ -36,6 +36,8 @@ import org.slf4j.Logger
 import java.io.File
 import java.net.MalformedURLException
 import java.net.URL
+import java.util.*
+import kotlin.NoSuchElementException
 
 /**
  * Clikt application for TermiCron
@@ -433,8 +435,8 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
              */
             @Throws(NoSuchElementException::class)
             private fun cxxDisplayNameToMdrChoice(displayName: String): MdrChoices =
-                MdrChoices.values().associateBy { it.displayName.toLowerCase() }.let { c ->
-                    c[displayName.toLowerCase()]
+                MdrChoices.values().associateBy { it.displayName.lowercase(Locale.getDefault()) }.let { c ->
+                    c[displayName.lowercase(Locale.getDefault())]
                         ?: throw NoSuchElementException("no MDR $displayName is configured")
                 }
 
