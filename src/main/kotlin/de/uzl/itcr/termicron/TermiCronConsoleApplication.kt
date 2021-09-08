@@ -46,7 +46,15 @@ import kotlin.NoSuchElementException
  * @property log the logger of the application
  */
 class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log: Logger) : NoOpCliktCommand(
-    printHelpOnEmptyArgs = true
+    printHelpOnEmptyArgs = true,
+    name = "termicron",
+    help = """        
+        This program uses options and commands to parse your intention.
+        Commands have no leading dashes, while options do. You will need to provide options to the commands as needed.
+        
+        Help is available at every step, either by providing the --help option to the current command, or by not including
+        required commands.
+    """.trimIndent()
 ) {
 
     /**
@@ -54,6 +62,7 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
      * and we make sure that (required) is shown for all required arguments
      */
     init {
+
         subcommands(Ingest(fhirContext, log))
         //subcommands(Ingest(fhirContext, log), BundleBuilderCommand(fhirContext, log))
         context {
