@@ -7,7 +7,42 @@
     <link rel="stylesheet"
           href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/default.min.css">
     <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/highlight.min.js"></script>
-    <script>hljs.highlightAll();</script>
+    <!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
+    <script>
+        hljs.highlightAll();
+
+        function updateMessage(message) {
+            $("#create-message").text(message);
+        }
+
+        function ajaxCreate(endpoint) {
+            let body = {
+                bundleString: `{{{bundleString}}}`,
+                endpoint: endpoint
+            };
+            $.post({
+                url: "/create-bundle",
+                data: body,
+                success: function (data) {
+                    let message = `Created bundle ${data.resourceId} version ${data.resourceVersion} at ${data.resourceUri}`;
+                    updateMessage(message);
+                    $("#create-uri").prop("href", data.resourceUri).removeAttr("hidden");
+                },
+                error: function (data) {
+                    let message = `Error creating bundle ${data.responseJSON.resourceId} at ${endpoint}: ${data.responseJSON.errorMessage}`;
+                    updateMessage(message);
+                    $("#create-uri").prop("hidden", "hidden");
+                }
+            });
+            /*$.post("/create-bundle", body, function (data) {
+                let message = (data.success)
+                        ? `Created bundle ${data.resourceId} version ${data.resourceVersion} at ${data.resourceUri}`
+                        : `Error creating bundle ${data.resourceId} at ${endpoint}: ${data.errorMessage}`;
+                $("#create-message").text(message);
+                $("#create-uri").prop("href", data.resourceUri).removeAttr("hidden");
+            });*/
+        }
+    </script>
     <style>
         .create-button {
             margin-right: 1%;
@@ -28,18 +63,21 @@
         <h3>Create bundle on endpoint</h3>
 
         <div class="pure-u-1-2">
-            <form class="pure-form" action="/create-bundle" method="post">
-                <!--<input type="hidden" name="bundle" value="{{bundleString}}">-->
-                {{#endpoints}}
-                    <input type="submit" name="submit" value="{{.}}" class="pure-button button-secondary create-button">
-                {{/endpoints}}
-            </form>
+            {{#endpoints}}
+                <input type="button" value="{{.}}" class="pure-button button-secondary create-button"
+                       onclick="ajaxCreate('{{.}}')">
+            {{/endpoints}}
+        </div>
+        <div class="pure-u-1">
+            <span class="pure-form-message-inline">
+                <span id="create-message"></span>
+                <a href="" target="_blank" id="create-uri" hidden="hidden"><i class="fas fa-external-link-alt"></i></a>
+            </span>
         </div>
     </div>
     <hr/>
     <div class="pure-u-1">
         <form method="get" action="/">
-            <input type="hidden" name="">
             <input type="submit" value="Start Over" class="pure-button">
         </form>
     </div>

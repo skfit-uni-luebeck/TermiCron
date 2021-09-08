@@ -58,6 +58,7 @@ dependencies {
     implementation("com.google.oauth-client:google-oauth-client-jetty:1.32.1")
     implementation("com.google.http-client:google-http-client:1.40.0")
     implementation("com.google.http-client:google-http-client-gson:1.40.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12.5")
 
     //retrofit dependencies added to override unversioned dependency on Retrofit2 of jnpm.
     // 2.9.0 is not great with Java 11 due to illegal reflective operations!

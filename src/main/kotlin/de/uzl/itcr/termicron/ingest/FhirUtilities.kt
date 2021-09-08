@@ -104,15 +104,21 @@ class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
             } as T
         } catch (e: DataFormatException) {
             logger.error("error parsing FHIR resource as ${T::class.java.simpleName}")
+            logger.debug("raw response: $stringResponse")
             var outcome: OperationOutcome? = null
             try {
                 outcome = fhirContext.newJsonParser().parseResource(OperationOutcome::class.java, stringResponse)
                 logger.error("FHIR Server returned a OperationOutcome with this error: ${outcome.issueFirstRep.diagnostics}")
+                throw FhirServerError(message = "FHIR Server operation was unsuccessful", outcome = outcome, e = e)
             } catch (e2: DataFormatException) {
                 logger.error("The response by the server could neither be parsed as a ${T::class.java.simpleName} nor as as OperationOutcome.")
                 logger.error("The endpoint ${httpRequest.uri()} is likely not a FHIR server (did you forget '/fhir'?)")
+                throw FhirServerError(
+                    message = "FHIR Server operation was unsuccessful due to unknown error (is the server a FHIR server?)",
+                    outcome = outcome,
+                    e = e2
+                )
             }
-            throw FhirServerError(message = "FHIR Server operation was unsuccessful", outcome = outcome, e = e)
         }
     }
 
@@ -160,7 +166,6 @@ open class TerminologyConversionError(message: String, e: Exception? = null) : E
  */
 class FhirServerError(message: String, val outcome: OperationOutcome? = null, e: Exception? = null) :
     TerminologyConversionError(message, e)
-
 
 
 /**

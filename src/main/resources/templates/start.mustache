@@ -11,9 +11,9 @@
     <!--suppress ES6ConvertVarToLetConst -->
     <script type="text/javascript">
         var numberOfEndpoints = 0;
-        $(document).ready(function() {
+        $(document).ready(function () {
 
-            $('#addEndpoint').click(function() {
+            $('#addEndpoint').click(function () {
                 appendEndpoint("");
             });
         })
@@ -21,11 +21,15 @@
         function appendEndpoint(defaultValue = "") {
             let id = numberOfEndpoints + 1;
             $("#group-endpoints").append(`
- <div class="pure-u-3-4 pure-control-group group-endpoint" id="group-endpoint-${id}">
-    <label for="endpoint-${id}">Endpoint ${id}</label>
-    <input type="text" id="endpoint-${id}" value="${defaultValue}" name="endpoint-${id}" class="input-endpoint">
-    <input type="button" class="pure-button button-warning" value="Remove"
+ <div class="pure-u-1 pure-control-group group-endpoint" id="group-endpoint-${id}">
+    <div class="pure-u-3-5">
+        <label for="endpoint-${id}">Endpoint ${id}</label>
+        <input type="text" id="endpoint-${id}" value="${defaultValue}" name="endpoint-${id}" class="input-endpoint">
+    </div>
+    <div class="pure-u-1-5">
+        <input type="button" class="pure-button button-warning" value="Remove"
            onclick="handleRemoveEndpointClick('group-endpoint-${id}')">
+    </div>
 </div>
  `);
             numberOfEndpoints++;
@@ -33,7 +37,7 @@
 
         function handleRemoveEndpointClick(id) {
             $('#' + id).remove();
-            numberOfEndpoints=0;
+            numberOfEndpoints = 0;
             let nodes = $("#group-endpoints").find("input.input-endpoint");
             let values = [];
             for (const currentNode of nodes) {
