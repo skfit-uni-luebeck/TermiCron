@@ -15,6 +15,18 @@
             $("#create-message").text(message);
         }
 
+        function downloadJson() {
+            //https://stackoverflow.com/a/18197341/2333678
+            
+            let element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(`{{{bundleString}}}`));
+            element.setAttribute('download', `termicron-bundle.json`);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
         function ajaxCreate(endpoint) {
             let body = {
                 bundleString: `{{{bundleString}}}`,
@@ -53,7 +65,9 @@
 <div class="pure-g grid-wrapper">
     <div class="pure-u-1">
         <h1>TermiCron Bundle Builder</h1>
-        <h2>Step 3: Bundle Result</h2>
+        <h2>Step 3: Bundle Result <a onclick="downloadJson()" title="Download JSON"
+                                     class="pure-button button-success"><i class="fas fa-file-download"
+                                                                           id="download-json"></i></a></h2>
     </div>
     <div class="pure-u-1">
         <pre><code>{{{bundleString}}}</code></pre>
