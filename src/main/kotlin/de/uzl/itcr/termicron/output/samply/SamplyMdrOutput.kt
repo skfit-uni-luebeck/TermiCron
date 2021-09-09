@@ -28,10 +28,9 @@ class SamplyMdrOutput : MdrOutput {
                     "designation"{
                         -vs.title
                     }
-                    if (vs.description != null)
-                        "definition" {
-                            -vs.description
-                        }
+                    "definition" {
+                        if (vs.description != null) -vs.description else -"missing description"
+                    }
                 }
             }
 
