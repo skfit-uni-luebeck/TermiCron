@@ -4,8 +4,14 @@
     <title>TermiCron Bundle Builder</title>
     {{> fragments/style}}
     <style>
-        input.input-endpoint {
-            width: inherit;
+        .group-endpoint {
+            margin-bottom: 3pt;
+        }
+        .endpoint-label {
+            width: 100%;
+            height: 100%;
+            display: table;
+            text-align: end;
         }
     </style>
     <!--suppress ES6ConvertVarToLetConst -->
@@ -21,17 +27,19 @@
         function appendEndpoint(defaultValue = "") {
             let id = numberOfEndpoints + 1;
             $("#group-endpoints").append(`
- <div class="pure-u-1 pure-control-group group-endpoint" id="group-endpoint-${id}">
-    <div class="pure-u-3-5">
-        <label for="endpoint-${id}">Endpoint ${id}</label>
-        <input type="text" id="endpoint-${id}" value="${defaultValue}" name="endpoint-${id}" class="input-endpoint">
-    </div>
-    <div class="pure-u-1-5">
-        <input type="button" class="pure-button button-warning" value="Remove"
-           onclick="handleRemoveEndpointClick('group-endpoint-${id}')">
-    </div>
-</div>
- `);
+             <div class="pure-u-1 group-endpoint" id="group-endpoint-${id}">
+                <div class="pure-u-4-24">
+                    <label for="endpoint-${id}" class="endpoint-label">Endpoint ${id}</label>
+                </div>
+                <div class="pure-u-12-24">
+                    <input type="text" id="endpoint-${id}" value="${defaultValue}" name="endpoint-${id}" class="input-endpoint pure-input-1">
+                </div>
+                <div class="pure-u-4-24">
+                    <input type="button" class="pure-button button-warning" value="Remove"
+                       onclick="handleRemoveEndpointClick('group-endpoint-${id}')">
+                </div>
+            </div>
+             `);
             numberOfEndpoints++;
         }
 
@@ -58,8 +66,8 @@
     </div>
     <div class="pure-u-1">
         <!--suppress HtmlUnknownTarget -->
-        <form class="pure-form pure-form-aligned" method="POST" action="query" id="form-endpoints">
-            <div id="group-endpoints">
+        <form class="pure-form pure-g" method="POST" action="query" id="form-endpoints">
+            <div id="group-endpoints" class="pure-u-1">
                 {{#defaultServers}}
                     <script type="text/javascript">
                         appendEndpoint("{{url}}")

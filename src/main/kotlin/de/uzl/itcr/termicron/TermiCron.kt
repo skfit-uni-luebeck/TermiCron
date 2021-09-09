@@ -77,6 +77,7 @@ fun main(args: Array<String>) {
             // this inhibits running the web app, and hands over parsing to the CLI app
             app.web(WebApplicationType.NONE)
             termiCronApp.main(args)
+            exitProcess(0)
         }
     }
     app.run(*args)
