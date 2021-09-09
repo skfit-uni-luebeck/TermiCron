@@ -43,7 +43,7 @@ class CxxMdrSynchronization(
      */
     override fun isPresent(vs: ValueSetExpansion): Boolean {
         val request = HttpRequest.newBuilder()
-            .uri(mdrConfiguration.buildApiUrl("/catalogs/catalog?code=${vs.titleUrlEncoded}&version=${vs.businessVersionUrlEncoded}"))
+            .uri(mdrConfiguration.buildApiUrl("/catalogs/catalog?code=${vs.nameUrlEncoded}&version=${vs.businessVersionUrlEncoded}"))
             .header("Authorization", authDriver.currentCredential().encodeCredentialToAuthorizationHeader())
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.discarding())
@@ -58,7 +58,7 @@ class CxxMdrSynchronization(
      */
     override fun isCurrent(vs: ValueSetExpansion): Boolean {
         val request = HttpRequest.newBuilder()
-            .uri(mdrConfiguration.buildApiUrl("catalogs/catalog?code=${vs.titleUrlEncoded}&version=${vs.businessVersionUrlEncoded}"))
+            .uri(mdrConfiguration.buildApiUrl("catalogs/catalog?code=${vs.nameUrlEncoded}&version=${vs.businessVersionUrlEncoded}"))
             .header("Authorization", authDriver.currentCredential().encodeCredentialToAuthorizationHeader())
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.discarding())
