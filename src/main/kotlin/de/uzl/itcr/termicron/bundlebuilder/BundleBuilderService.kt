@@ -35,9 +35,14 @@ class BundleBuilderService(
         val resourceBundle = fhirUtilities.executeFhirStatementParsing<Bundle>(requestUrl)
         val references = resourceBundle.entry?.map { bundleEntryComponent ->
             val r = bundleEntryComponent.resource
-            val displayString = "${bundleEntryComponent.resource.fhirType()}: " + when (r) {
-                is CodeSystem -> "${r.url} (${r.title}) version ${r.version}"
-                is ValueSet -> "${r.url} (${r.title}) version ${r.version}"
+            val displayName = when (r) {
+                is CodeSystem -> listOf<String?>(r.title, r.name, r.id)
+                is ValueSet -> listOf<String?>(r.title, r.name, r.id)
+                else -> listOf(r.id)
+            }.first { it != null } ?: "unknown"
+            val displayString = when (r) {
+                is CodeSystem -> "${r.url} ($displayName) version ${r.version}"
+                is ValueSet -> "${r.url} ($displayName) version ${r.version}"
                 else -> r.id
             }
             Reference(r).apply {
