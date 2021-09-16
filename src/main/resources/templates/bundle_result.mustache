@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<!--suppress HtmlUnknownTarget -->
+<html lang="en">
+<head>
+    <title>TermiCron BundleBuilder</title>
+    {{> fragments/style}}
+    <link rel="stylesheet"
+          href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/highlight.min.js"></script>
+    <!--suppress JSUnresolvedVariable, JSUnresolvedFunction -->
+    <script>
+        hljs.highlightAll();
+
+        function updateMessage(message) {
+            $("#create-message").text(message);
+        }
+
+        function downloadJson() {
+            //https://stackoverflow.com/a/18197341/2333678
+
+            let element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(`{{{bundleString}}}`));
+            element.setAttribute('download', `termicron-bundle.json`);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        function ajaxCreate(endpoint) {
+            let body = {
+                bundleString: `{{{bundleString}}}`,
+                endpoint: endpoint
+            };
+            $.post({
+                url: "/create-bundle",
+                data: body,
+                success: function (data) {
+                    let message = `Created bundle ${data.resourceId} version ${data.resourceVersion} at ${data.resourceUri}`;
+                    updateMessage(message);
+                    $("#create-uri").prop("href", data.resourceUri).removeAttr("hidden");
+                },
+                error: function (data) {
+                    let message = `Error creating bundle ${data.responseJSON.resourceId} at ${endpoint}: ${data.responseJSON.errorMessage}`;
+                    updateMessage(message);
+                    $("#create-uri").prop("hidden", "hidden");
+                }
+            });
+            /*$.post("/create-bundle", body, function (data) {
+                let message = (data.success)
+                        ? `Created bundle ${data.resourceId} version ${data.resourceVersion} at ${data.resourceUri}`
+                        : `Error creating bundle ${data.resourceId} at ${endpoint}: ${data.errorMessage}`;
+                $("#create-message").text(message);
+                $("#create-uri").prop("href", data.resourceUri).removeAttr("hidden");
+            });*/
+        }
+    </script>
+    <style>
+        .create-button {
+            margin-right: 1%;
+        }
+    </style>
+</head>
+<body>
+<div class="pure-g grid-wrapper">
+    <div class="pure-u-1">
+        <h1>TermiCron Bundle Builder</h1>
+        <h2>Step 3: Bundle Result <a onclick="downloadJson()" title="Download JSON"
+                                     class="pure-button button-success"><i class="fas fa-file-download"
+                                                                           id="download-json"></i></a></h2>
+    </div>
+    <div class="pure-u-1">
+        <pre><code>{{{bundleString}}}</code></pre>
+    </div>
+    <hr/>
+    <div class="pure-u-1">
+        <h3>Create bundle on endpoint</h3>
+
+        <div class="pure-u-1-2">
+            {{#endpoints}}
+                <input type="button" value="{{.}}" class="pure-button button-secondary create-button"
+                       onclick="ajaxCreate('{{.}}')">
+            {{/endpoints}}
+        </div>
+        <div class="pure-u-1">
+            <span class="pure-form-message-inline">
+                <span id="create-message"></span>
+                <a href="" target="_blank" id="create-uri" hidden="hidden"><i class="fas fa-external-link-alt"></i></a>
+            </span>
+        </div>
+    </div>
+    <hr/>
+    <div class="pure-u-1">
+        <form method="get" action="/">
+            <input type="submit" value="Start Over" class="pure-button">
+        </form>
+    </div>
+</div>
+</body>
+</head>
+</html>

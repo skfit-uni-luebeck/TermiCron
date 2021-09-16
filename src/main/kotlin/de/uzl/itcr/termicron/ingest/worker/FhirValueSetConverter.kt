@@ -9,6 +9,7 @@ import de.uzl.itcr.termicron.ingest.getCanonicalLink
 import org.hl7.fhir.r4.model.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.*
 
 /**
  * convert a FHIR resource to a ValueSetExpansion
@@ -51,7 +52,7 @@ class FhirValueSetConverter(
     private fun resourceTypeForBundleComponent(bundleEntryComponent: Bundle.BundleEntryComponent): ResourceType {
         when {
             bundleEntryComponent.hasLink() -> {
-                val linkNames = bundleEntryComponent.link.map { it.relation.toLowerCase() }
+                val linkNames = bundleEntryComponent.link.map { it.relation.lowercase(Locale.getDefault()) }
                 return when {
                     "codesystem" in linkNames -> ResourceType.CodeSystem
                     "valueset" in linkNames -> ResourceType.ValueSet

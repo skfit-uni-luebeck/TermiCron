@@ -1,0 +1,11 @@
+spring:
+  main:
+    banner-mode: off
+logging:
+  level:
+    org: info
+
+bundlebuilder:
+  defaults:
+    default-servers:
+      - https://enter-an-endpoint-here.com/fhir

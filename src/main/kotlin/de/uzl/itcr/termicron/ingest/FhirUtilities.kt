@@ -12,6 +12,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.*
 
 /**
  * helper class to talk to FHIR HTTP endpoints
@@ -43,25 +44,18 @@ class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
     }
 
     /**
-     * clean this String as a URI: make sure exactly one "/" is at the end
-     *
-     * @return this String as "clean" URI
-     */
-    private fun String.cleanUri(): URI = URI.create(this.trimEnd('/') + "/")
-
-    /**
      * determine the server implementation for a specified FHIR URI endpoint
      *
      * @param uri the URI to verify
      * @return the KnownFhirServer enum member
      */
-    fun getServerSoftware(uri: URI): KnownFhirServer {
+    fun getServerSoftware(uri: URI): KnownFhirServer? = try {
         endpointServerMap[uri]?.let { return it }
         val metadataEndpoint = uri.resolve("metadata")
         val capabilityStatement = executeFhirStatementParsing<CapabilityStatement>(metadataEndpoint)
         val softwareName = capabilityStatement.software.name ?: "other"
         val detectedFhirServer = values()
-            .find { softwareName.toLowerCase().contains(it.softwareNameFragment) }
+            .find { softwareName.lowercase(Locale.getDefault()).contains(it.softwareNameFragment) }
             ?: OTHER
         if (detectedFhirServer == OTHER && capabilityStatement.software.name != null) {
             logger.warn("The FHIR server '${capabilityStatement.software.name}' is not known")
@@ -73,7 +67,9 @@ class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
             else -> logger.info("Detected FHIR Server $detectedFhirServer at $uri")
         }
         endpointServerMap.putIfAbsent(uri, detectedFhirServer)
-        return detectedFhirServer
+        detectedFhirServer
+    } catch (e: Exception) {
+        null
     }
 
     /**
@@ -108,15 +104,21 @@ class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
             } as T
         } catch (e: DataFormatException) {
             logger.error("error parsing FHIR resource as ${T::class.java.simpleName}")
+            logger.debug("raw response: $stringResponse")
             var outcome: OperationOutcome? = null
             try {
                 outcome = fhirContext.newJsonParser().parseResource(OperationOutcome::class.java, stringResponse)
                 logger.error("FHIR Server returned a OperationOutcome with this error: ${outcome.issueFirstRep.diagnostics}")
+                throw FhirServerError(message = "FHIR Server operation was unsuccessful", outcome = outcome, e = e)
             } catch (e2: DataFormatException) {
                 logger.error("The response by the server could neither be parsed as a ${T::class.java.simpleName} nor as as OperationOutcome.")
                 logger.error("The endpoint ${httpRequest.uri()} is likely not a FHIR server (did you forget '/fhir'?)")
+                throw FhirServerError(
+                    message = "FHIR Server operation was unsuccessful due to unknown error (is the server a FHIR server?)",
+                    outcome = outcome,
+                    e = e2
+                )
             }
-            throw FhirServerError(message = "FHIR Server operation was unsuccessful", outcome = outcome, e = e)
         }
     }
 
@@ -153,7 +155,7 @@ class FhirUtilities(val httpClient: HttpClient, val fhirContext: FhirContext) {
 open class TerminologyConversionError(message: String, e: Exception? = null) : Exception(message, e)
 
 /**
- * an excpetion that occurred talking to a FHIR TS endpoint
+ * an exception that occurred talking to a FHIR TS endpoint
  *
  * @property outcome the OperationOutcome encapsulated here
  * @constructor
@@ -164,3 +166,11 @@ open class TerminologyConversionError(message: String, e: Exception? = null) : E
  */
 class FhirServerError(message: String, val outcome: OperationOutcome? = null, e: Exception? = null) :
     TerminologyConversionError(message, e)
+
+
+/**
+ * clean this String as a URI: make sure exactly one "/" is at the end
+ *
+ * @return this String as "clean" URI
+ */
+fun String.cleanUri(): URI = URI.create(this.trimEnd('/') + "/")

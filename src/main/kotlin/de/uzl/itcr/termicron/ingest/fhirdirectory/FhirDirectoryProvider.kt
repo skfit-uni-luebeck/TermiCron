@@ -140,7 +140,7 @@ class FhirDirectoryProvider(
     fun getResourceFilenamesFromDirectory(): List<File> {
         logger.info("retrieving files from ${File(directory).absolutePath}")
         return File(directory).listFiles(FileFilter {
-            when (it.extension.toLowerCase()) {
+            when (it.extension.lowercase(Locale.getDefault())) {
                 "xml", "json" -> true
                 else -> false
             }
@@ -213,7 +213,7 @@ class FhirDirectoryProvider(
              */
             @Throws(FileTypeNotSupportedError::class)
             fun getParserForFile(file: File, fhirContext: FhirContext): IParser =
-                when (file.extension.toLowerCase()) {
+                when (file.extension.lowercase(Locale.getDefault())) {
                     "xml" -> fhirContext.newXmlParser()
                     "json" -> fhirContext.newJsonParser()
                     else -> throw FileTypeNotSupportedError("${file.extension} is not supported for FHIR parsing")

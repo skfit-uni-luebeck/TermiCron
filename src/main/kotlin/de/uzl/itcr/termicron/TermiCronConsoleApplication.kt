@@ -13,6 +13,7 @@ import de.uzl.itcr.termicron.authentication.cxxmdrauth.CxxMdrAuthenticationDrive
 import de.uzl.itcr.termicron.authentication.cxxmdrauth.CxxMdrAuthConfiguration
 import de.uzl.itcr.termicron.authentication.oauth.OAuthAuthenticationDriver
 import de.uzl.itcr.termicron.authentication.oauth.OAuthDriverConfiguration
+import de.uzl.itcr.termicron.bundlebuilder.BundleBuilderController
 import de.uzl.itcr.termicron.configuration.ConversionPipeline
 import de.uzl.itcr.termicron.configuration.CxxMdrConfiguration
 import de.uzl.itcr.termicron.configuration.QL4MDRConfiguration
@@ -35,6 +36,8 @@ import org.slf4j.Logger
 import java.io.File
 import java.net.MalformedURLException
 import java.net.URL
+import java.util.*
+import kotlin.NoSuchElementException
 
 /**
  * Clikt application for TermiCron
@@ -42,32 +45,29 @@ import java.net.URL
  * @property fhirContext the HAPI FHIR context
  * @property log the logger of the application
  */
-class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log: Logger) : CliktCommand(
-    printHelpOnEmptyArgs = true
+class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log: Logger) : NoOpCliktCommand(
+    printHelpOnEmptyArgs = true,
+    name = "termicron",
+    help = """        
+        This program uses options and commands to parse your intention.
+        Commands have no leading dashes, while options do. You will need to provide options to the commands as needed.
+        
+        Help is available at every step, either by providing the --help option to the current command, or by not including
+        required commands.
+    """.trimIndent()
 ) {
-
-    /**
-     * the conversion pipeline instance
-     */
-    private val pipeline by findOrSetObject { ConversionPipeline() }
 
     /**
      * we provide the Ingest context as the only subcommand,
      * and we make sure that (required) is shown for all required arguments
      */
     init {
+
         subcommands(Ingest(fhirContext, log))
+        //subcommands(Ingest(fhirContext, log), BundleBuilderCommand(fhirContext, log))
         context {
             helpFormatter = CliktHelpFormatter(showRequiredTag = true)
         }
-    }
-
-    /**
-     * called when the Clikt app is run
-     */
-    override fun run() {
-        log.info("configuring pipeline")
-        log.info(pipeline.toString())
     }
 
     /**
@@ -80,9 +80,15 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
      *
      * @param log the logger
      */
-    class Ingest(val fhirContext: FhirContext, log: Logger) : NoOpCliktCommand(
+    class Ingest(val fhirContext: FhirContext, private val log: Logger) : CliktCommand(
         printHelpOnEmptyArgs = true,
     ) {
+
+        /**
+         * the conversion pipeline instance
+         */
+        private val pipeline by findOrSetObject { ConversionPipeline() }
+
         init {
             subcommands(
                 Directory(fhirContext, log),
@@ -90,6 +96,14 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
                 Simplifier(fhirContext, log),
                 SnomedCtEcl(fhirContext, log)
             )
+        }
+
+        /**
+         * called when the Clikt app is run
+         */
+        override fun run() {
+            log.info("configuring pipeline")
+            log.info(pipeline.toString())
         }
 
         /**
@@ -430,8 +444,8 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
              */
             @Throws(NoSuchElementException::class)
             private fun cxxDisplayNameToMdrChoice(displayName: String): MdrChoices =
-                MdrChoices.values().associateBy { it.displayName.toLowerCase() }.let { c ->
-                    c[displayName.toLowerCase()]
+                MdrChoices.values().associateBy { it.displayName.lowercase(Locale.getDefault()) }.let { c ->
+                    c[displayName.lowercase(Locale.getDefault())]
                         ?: throw NoSuchElementException("no MDR $displayName is configured")
                 }
 
@@ -762,6 +776,23 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
             .path(mustExist = false)
             .required()
     }
+
+    /*class BundleBuilderCommand(
+        val fhirContext: FhirContext,
+        val log: Logger
+    ) : CliktCommand(
+        printHelpOnEmptyArgs = true
+    ) {
+
+        private val inputFhirServers: List<String> by option(
+            "--fhir-server"
+        ).multiple(required = true)
+
+        override fun run() {
+            log.info("Starting Bundle Builder CUI")
+            BundleBuilderController(inputFhirServers, log).runBundleBuilder()
+        }
+    }*/
 }
 
 /**

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>TermiCron BundleBuilder</title>
+    {{> fragments/style}}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            function checkEnable() {
+                let bundleIdRegexp = new RegExp('^[A-Za-z0-9\-\.]{1,64}$');
+                let bundleId = $('#bundle-id').val()
+                if ($(".check:checked").length && bundleIdRegexp.test(bundleId)) {
+                    $("#build-submit").removeAttr('disabled');
+                    $('span.hint').prop('hidden', true);
+                } else {
+                    $('#build-submit').prop('disabled', true);
+                    $("span.hint").removeAttr("hidden");
+                }
+            }
+
+            $(".check").change(checkEnable);
+            $("input#bundle-id").on("input", checkEnable);
+        });
+    </script>
+    <style>
+        table.resource-table {
+            margin: auto;
+        }
+
+        h4.table-head {
+            width: available;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="pure-g grid-wrapper">
+    <div class="pure-u-1">
+        <h1>TermiCron Bundle Builder</h1>
+        <h2>Step 2: Select the resources to add to your bundle.</h2>
+    </div>
+    <div class="pure-u-1">
+        <!--suppress HtmlUnknownTarget -->
+        <form action="build" class="pure-form" method="POST" id="form-resources">
+            <div class="pure-u-1">
+                <fieldset>
+                    <div class="pure-u-1">
+                        <label for="bundle-id">Bundle ID (required)</label>
+                        <input type="text"
+                               id="bundle-id"
+                               name="bundle-id"
+                               required="required"
+                               autocomplete="off"
+                               pattern="[A-Za-z0-9\-\.]{1,64}"
+                               maxlength="64"
+                               minlength="1"
+                               title="The bundle ID must be alphanumeric, between 1 and 64 characters, and only '.' and '-' are allowed."
+                               class="pure-input-1-3">
+                        <input type="submit" class="pure-button pure-button-primary" id="build-submit"
+                               value="Build Bundle"
+                               style="margin: auto;"
+                               disabled="disabled">
+                        <span class="hint pure-form-message-inline">A <a
+                                href="https://www.hl7.org/fhir/datatypes.html#id" target="_blank">valid</a> bundle ID and at least one resource is required.</span>
+                    </div>
+                </fieldset>
+            </div>
+            {{#resources}}
+                <div class="pure-u-1">
+                    <hr/>
+                </div>
+                <div class="pure-u-1">
+                    <h3><i>{{serverEndpoint}}</i> resources</h3>
+                    <div class="pure-u-1">
+                        <h4 class="table-head">{{codeSystemsSize}} CodeSystems (with <code>valueSet</code> URL)</h4>
+                        <table class="pure-table pure-table-horizontal pure-table-striped resource-table">
+                            {{#codeSystems}}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="{{id}}" id="{{id}}" class="check">
+                                    </td>
+                                    <td>
+                                        <label for="{{id}}">
+                                            {{display}}
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <a href="{{reference}}" target="_blank" title="Open resource in new tab"><i
+                                                class="fas fa-external-link-alt"></i></a>
+                                    </td>
+                                </tr>
+                            {{/codeSystems}}
+                        </table>
+                    </div>
+                    <div class="pure-u-1">
+                        <h4 class="table-head">{{valueSetsSize}} ValueSets</h4>
+                        <table class="pure-table pure-table-horizontal pure-table-striped resource-table">
+                            {{#valueSets}}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="{{id}}" id="{{id}}" class="check">
+                                    </td>
+                                    <td>
+                                        <label for="{{id}}">
+                                            {{display}}
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <a href="{{reference}}" target="_blank" title="Open resource in new tab"><i
+                                                class="fas fa-external-link-alt"></i></a>
+                                    </td>
+                                </tr>
+                            {{/valueSets}}
+                        </table>
+                    </div>
+                </div>
+            {{/resources}}
+        </form>
+    </div>
+</div>
+</body>
+</html>

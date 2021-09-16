@@ -72,7 +72,7 @@ class SamplyMdrOutput : MdrOutput {
             }
         }
         return MdrOutput.MdrOutputResult(
-            result = samplyOutput.toString(prettyFormat = true)
+            result = samplyOutput.toString(prettyFormat = false)
         )
     }
 
