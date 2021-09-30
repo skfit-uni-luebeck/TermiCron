@@ -26,4 +26,6 @@ class SynchronizationPipeline(
                 else -> "'${it.canonicalUrl}'" to SynchronizationOutcome.ERROR
             }
         }
+
+    fun handlerIsValidEndpoint() = synchronizationHandler.validateEndpoint()
 }

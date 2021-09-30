@@ -2,10 +2,6 @@ package de.uzl.itcr.termicron
 
 import ca.uhn.fhir.context.FhirContext
 import org.apache.tika.config.TikaConfig
-import org.apache.tika.mime.MediaType
-import org.apache.tika.mime.MimeType
-import org.apache.tika.mime.MimeTypes
-import org.apache.tika.mime.MimeTypesFactory
 import java.net.http.HttpClient
 import java.time.Duration
 
@@ -41,7 +37,6 @@ class StaticHelpers {
             }
                 .connectTimeout(Duration.ofSeconds(20))
                 .build()
-
     }
 
 }

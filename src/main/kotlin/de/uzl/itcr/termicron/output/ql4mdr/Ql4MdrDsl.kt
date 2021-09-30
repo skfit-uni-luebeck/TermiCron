@@ -32,7 +32,7 @@ interface GraphQlElement {
  * @property delimiters if delimiters are to be appended after the name (e.g. "query { }"), or Delimiters.NONE
  */
 @Ql4MdrMarker
-abstract class GraphQlNode(val name: String?, val delimiters: Delimiters) :
+abstract class GraphQlNode(val name: String?, private val delimiters: Delimiters) :
     GraphQlElement {
     /**
      * the children these node has, that have to rendered under this node
@@ -246,6 +246,8 @@ class QueryEntityArguments : GraphQlNode(null, Delimiters.PAREN) {
      */
     private val arguments = arrayListOf<Pair<String, String>>()
 
+    private val returnParams = arrayListOf<String>()
+
     /**
      * pairs of name and value are provided using the syntax:
      * +("name" to "value")
@@ -254,6 +256,10 @@ class QueryEntityArguments : GraphQlNode(null, Delimiters.PAREN) {
      */
     operator fun Pair<String, String>.unaryPlus() {
         arguments.add(this)
+    }
+
+    operator fun String.unaryPlus() {
+        returnParams.add(this)
     }
 
     /**
@@ -266,6 +272,11 @@ class QueryEntityArguments : GraphQlNode(null, Delimiters.PAREN) {
         builder.append(
             arguments.joinToString(", ") { "${it.first}: \"${it.second}\"" }
         )
+        when {
+            returnParams.isNotEmpty() -> {
+                if (arguments.isNotEmpty()) builder.append(",")
+            }
+        }
     }
 }
 
@@ -299,7 +310,7 @@ abstract class ElementWithAttributes(name: String? = null, delimiters: Delimiter
     /**
      * the attributes of this node, as name-value pairs
      */
-    val attributes = arrayListOf<Pair<String, String>>()
+    private val attributes = arrayListOf<Pair<String, String>>()
 
     /**
      * add attributes with the syntax +("foo" to "bar")
@@ -327,7 +338,7 @@ class MutationAttributes : ElementWithAttributes() {
     /**
      * attributes that are a list, keyed by the name of the attribute (e.g. "concepts")
      */
-    val listAttributes: MutableMap<String, ArrayList<MutationChild>> = mutableMapOf()
+    private val listAttributes: MutableMap<String, ArrayList<MutationChild>> = mutableMapOf()
 
     /**
      * render the attributes. First, the normal render procedure for this element,

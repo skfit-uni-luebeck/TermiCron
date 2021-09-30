@@ -2,12 +2,15 @@ package de.uzl.itcr.termicron.synchronization.cxx
 
 import de.uzl.itcr.termicron.StaticHelpers
 import de.uzl.itcr.termicron.authentication.MdrAuthenticationDriver
+import de.uzl.itcr.termicron.authentication.addAuthorizationHeader
 import de.uzl.itcr.termicron.catalogmodel.ValueSetExpansion
 import de.uzl.itcr.termicron.configuration.CxxMdrConfiguration
 import de.uzl.itcr.termicron.output.cxx.CxxMdrOutputRest
 import de.uzl.itcr.termicron.synchronization.MdrSynchronization
-import org.apache.http.HttpStatus
+import org.apache.http.HttpHeaders
+import org.apache.http.entity.ContentType
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
@@ -44,10 +47,10 @@ class CxxMdrSynchronization(
     override fun isPresent(vs: ValueSetExpansion): Boolean {
         val request = HttpRequest.newBuilder()
             .uri(mdrConfiguration.buildApiUrl("/catalogs/catalog?code=${vs.nameUrlEncoded}&version=${vs.businessVersionUrlEncoded}"))
-            .header("Authorization", authDriver.currentCredential().encodeCredentialToAuthorizationHeader())
+
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.discarding())
-        return (response.statusCode() == HttpStatus.SC_OK).also { log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' is ${if (it) "present" else "not present"}") }
+        return (HttpStatus.valueOf(response.statusCode()).is2xxSuccessful).also { log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' is ${if (it) "present" else "not present"}") }
     }
 
     /**
@@ -59,10 +62,10 @@ class CxxMdrSynchronization(
     override fun isCurrent(vs: ValueSetExpansion): Boolean {
         val request = HttpRequest.newBuilder()
             .uri(mdrConfiguration.buildApiUrl("catalogs/catalog?code=${vs.nameUrlEncoded}&version=${vs.businessVersionUrlEncoded}"))
-            .header("Authorization", authDriver.currentCredential().encodeCredentialToAuthorizationHeader())
+            .addAuthorizationHeader(authDriver)
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.discarding())
-        return (response.statusCode() == HttpStatus.SC_OK).also { log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' is ${if (it) "current" else "not current"}") }
+        return (HttpStatus.valueOf(response.statusCode()).is2xxSuccessful).also { log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' is ${if (it) "current" else "not current"}") }
     }
 
     /**
@@ -77,11 +80,11 @@ class CxxMdrSynchronization(
             val request = HttpRequest.newBuilder()
                 .uri(mdrConfiguration.buildApiUrl("catalogs/catalog"))
                 .header("Content-Type", "application/json;charset=UTF-8")
-                .header("Authorization", authDriver.currentCredential().encodeCredentialToAuthorizationHeader())
+                .addAuthorizationHeader(authDriver)
                 .POST(HttpRequest.BodyPublishers.ofString(convertedValueSet.result))
                 .build()
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            (response.statusCode() == HttpStatus.SC_CREATED).also {
+            (HttpStatus.valueOf(response.statusCode()).is2xxSuccessful).also {
                 log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' was ${if (it) "successfully" else "not successfully"} created")
             }
         } else {
@@ -101,15 +104,34 @@ class CxxMdrSynchronization(
             val request = HttpRequest.newBuilder()
                 .uri(mdrConfiguration.buildApiUrl("catalogs/catalog?code=${vs.titleUrlEncoded}&version=${vs.businessVersionUrlEncoded}"))
                 .header("Content-Type", "application/json;charset=UTF-8")
-                .header("Authorization", authDriver.currentCredential().encodeCredentialToAuthorizationHeader())
+                .addAuthorizationHeader(authDriver)
                 .PUT(HttpRequest.BodyPublishers.ofString(convertedValueSet.result))
                 .build()
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            (response.statusCode() == HttpStatus.SC_OK).also {
+            (HttpStatus.valueOf(response.statusCode()).is2xxSuccessful).also {
                 log.debug("expanded VS '${vs.title} @ version '${vs.businessVersion}' was ${if (it) "successfully" else "not successfully"} updated")
             }
         } else {
             false
         }
+    }
+
+    override fun validateEndpoint(): Boolean {
+        val request = HttpRequest.newBuilder()
+            .uri(mdrConfiguration.buildApiUrl("/"))
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.mimeType)
+            .addAuthorizationHeader(authDriver)
+            .GET()
+            .build()
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+        when (val statusCode = HttpStatus.valueOf(response.statusCode())) {
+            HttpStatus.OK -> return true
+            HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN -> log.error("Unauthorized - check your credentials")
+            else -> log.error(
+                "Error communicating with CentraXX MDR. " +
+                        "Got HTTP status code $statusCode via URL ${mdrConfiguration.apiEndpoint}"
+            )
+        }
+        return false
     }
 }
