@@ -9,7 +9,7 @@ import java.net.URL
  * @property apiEndpoint the endpoint of the MDR API
  */
 abstract class MdrConfiguration(
-    private val apiEndpoint: URL
+    val apiEndpoint: URL
 ) {
 
     /**

@@ -41,7 +41,7 @@ data class ConversionPipeline(
      */
     @Throws(IllegalStateException::class)
     fun runConversionPipeline(): List<Pair<String, SynchronizationOutcome>>? {
-        if (this.isConfigured()) {
+        if (this.isConfigured() && this.synchronizationPipeline?.handlerIsValidEndpoint() == true) {
             ingestPipeline!!.runStreaming()?.let {
                 val synchronizationResult = synchronizationPipeline!!.runSynchronization(it)
                 ingestPipeline!!.cleanup()

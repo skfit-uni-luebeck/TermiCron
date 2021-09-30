@@ -57,4 +57,6 @@ abstract class MdrSynchronization {
      * @return true if update successful
      */
     abstract fun update(vs: ValueSetExpansion): Boolean
+
+    abstract fun validateEndpoint() : Boolean
 }

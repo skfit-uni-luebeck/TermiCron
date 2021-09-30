@@ -102,4 +102,10 @@ class FileMdrSynchronization(
      * @return true if successful
      */
     override fun update(vs: ValueSetExpansion): Boolean = create(vs)
+
+    override fun validateEndpoint(): Boolean {
+        return outputPath.canWrite().also { canWrite ->
+            if (!canWrite) log.error("Can not write to specified output directory: ${outputPath.absolutePath}")
+        }
+    }
 }

@@ -1,16 +1,18 @@
 package de.uzl.itcr.termicron.synchronization.ql4mdr
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import de.uzl.itcr.termicron.StaticHelpers
 import de.uzl.itcr.termicron.authentication.MdrAuthenticationDriver
+import de.uzl.itcr.termicron.authentication.addAuthorizationHeader
 import de.uzl.itcr.termicron.catalogmodel.ValueSetExpansion
 import de.uzl.itcr.termicron.configuration.QL4MDRConfiguration
 import de.uzl.itcr.termicron.output.ql4mdr.QL4MDRMdrOutput
 import de.uzl.itcr.termicron.output.ql4mdr.ql4mdr
 import de.uzl.itcr.termicron.synchronization.MdrSynchronization
 import ninja.sakib.jsonq.JSONQ
-import org.apache.http.HttpStatus
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
@@ -86,7 +88,7 @@ class QL4MDRSynchronization(
         val parsedJson = JSONQ(response.body().byteInputStream())
         val hasNoErrors = "errors" !in parsedJson.JSON().names()
         val isCurrent = !parsedJson.find("data.conceptSystem").isNull
-        return response.statusCode() == HttpStatus.SC_OK && isCurrent && hasNoErrors
+        return HttpStatus.valueOf(response.statusCode()).is2xxSuccessful && isCurrent && hasNoErrors
     }
 
     /**
@@ -100,14 +102,19 @@ class QL4MDRSynchronization(
      * @return the HTTP response
      */
     private fun sendGraphQlQuery(queryString: String): HttpResponse<String> {
+        val wrappedQuery = ObjectMapper().writeValueAsString(GraphQlQuery(queryString.trim()))
         val request = HttpRequest.newBuilder()
-            .uri(mdrConfiguration.buildApiUrl(""))
-            .header("Content-Type", "application/graphql")
-            .header("Authorization", authDriver.currentCredential().encodeCredentialToAuthorizationHeader())
-            .POST(HttpRequest.BodyPublishers.ofString(queryString))
+            .uri(mdrConfiguration.apiEndpoint.toURI())
+            .header("Content-Type", "application/json")
+            .addAuthorizationHeader(authDriver)
+            .POST(HttpRequest.BodyPublishers.ofString(wrappedQuery))
             .build()
         return client.send(request, HttpResponse.BodyHandlers.ofString())
     }
+
+    data class GraphQlQuery(
+        val query: String
+    )
 
     /**
      * create the concept system via QL4MDR
@@ -118,7 +125,7 @@ class QL4MDRSynchronization(
     override fun create(vs: ValueSetExpansion): Boolean {
         val convertedValueSet = outputRest.outputCatalog(vs)
         return convertedValueSet.result?.let {
-            sendGraphQlQuery(it).statusCode() == HttpStatus.SC_OK
+            HttpStatus.valueOf(sendGraphQlQuery(it).statusCode()).is2xxSuccessful
         } ?: false
     }
 
@@ -131,7 +138,32 @@ class QL4MDRSynchronization(
     override fun update(vs: ValueSetExpansion): Boolean {
         val convertedValueSet = outputRest.outputCatalog(vs)
         return convertedValueSet.result?.let {
-            sendGraphQlQuery(it).statusCode() == HttpStatus.SC_OK
+            HttpStatus.valueOf(sendGraphQlQuery(it).statusCode()).is2xxSuccessful
         } ?: false
+    }
+
+    override fun validateEndpoint(): Boolean {
+        val graphqlString = ql4mdr {
+            query {
+                queryEntity("conceptSystems") {
+                    +("name")
+                }
+            }
+        }.toString()
+        val response = sendGraphQlQuery(graphqlString)
+        val statusCode = HttpStatus.valueOf(response.statusCode())
+        when {
+            statusCode == HttpStatus.UNAUTHORIZED || statusCode == HttpStatus.FORBIDDEN ->
+                logger.error("You are not authorized to interact with the terminology server")
+            statusCode.isError -> logger.error("The QL4MDR API returned an error code: $statusCode")
+            statusCode.is2xxSuccessful -> {
+                val parsedJson = JSONQ(response.body().byteInputStream()).JSON()
+                when ("data" in parsedJson.names()) {
+                    true -> return true
+                    else -> logger.error("The server did not return GraphQL to our query.")
+                }
+            }
+        }
+        return false
     }
 }

@@ -9,7 +9,7 @@ import java.net.URI
  * @property authEndpoint the endpoint where authentication is carried out against
  */
 abstract class AuthenticationConfiguration(
-    private val authEndpoint: URL
+    private val authEndpoint: URL? = null
 ) {
 
     /**
@@ -22,3 +22,5 @@ abstract class AuthenticationConfiguration(
         return URI.create("${authEndpoint.toString().trimEnd('/')}/${path.trimStart('/')}")
     }
 }
+
+class NoOpAuthenticationConfiguration : AuthenticationConfiguration()

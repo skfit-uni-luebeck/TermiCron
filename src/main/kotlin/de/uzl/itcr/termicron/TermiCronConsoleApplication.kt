@@ -3,17 +3,20 @@ package de.uzl.itcr.termicron
 import ca.uhn.fhir.context.FhirContext
 import com.github.ajalt.clikt.core.*
 import com.github.ajalt.clikt.output.CliktHelpFormatter
+import com.github.ajalt.clikt.parameters.groups.OptionGroup
+import com.github.ajalt.clikt.parameters.groups.cooccurring
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.file
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.path
 import com.github.ajalt.clikt.sources.PropertiesValueSource
+import de.uzl.itcr.termicron.authentication.NoOpAuthenticationConfiguration
+import de.uzl.itcr.termicron.authentication.NoOpAuthenticationDriver
 import de.uzl.itcr.termicron.authentication.cxxmdrauth.CxxMdrAuthenticationDriver
 import de.uzl.itcr.termicron.authentication.cxxmdrauth.CxxMdrAuthConfiguration
 import de.uzl.itcr.termicron.authentication.oauth.OAuthAuthenticationDriver
 import de.uzl.itcr.termicron.authentication.oauth.OAuthDriverConfiguration
-import de.uzl.itcr.termicron.bundlebuilder.BundleBuilderController
 import de.uzl.itcr.termicron.configuration.ConversionPipeline
 import de.uzl.itcr.termicron.configuration.CxxMdrConfiguration
 import de.uzl.itcr.termicron.configuration.QL4MDRConfiguration
@@ -33,6 +36,7 @@ import de.uzl.itcr.termicron.synchronization.cxx.CxxMdrSynchronization
 import de.uzl.itcr.termicron.synchronization.files.FileMdrSynchronization
 import de.uzl.itcr.termicron.synchronization.ql4mdr.QL4MDRSynchronization
 import org.slf4j.Logger
+import org.springframework.cglib.proxy.NoOp
 import java.io.File
 import java.net.MalformedURLException
 import java.net.URL
@@ -620,48 +624,52 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
             log
         ) {
 
-            /**
-             * the OIDC url
-             */
-            private val openIdUrl by option("--oidc", "--auth-url", "-a")
-                .convert { URL(it) }
-                .prompt("OIDC base url?")
+            class OidcSettings : OptionGroup() {
+                /**
+                 * the OIDC url
+                 */
+                val openIdUrl by option("--oidc", "--auth-url", "-a")
+                    .convert { URL(it) }
+                    .required()
 
-            /**
-             * the OIDC clientID
-             */
-            private val clientId: String by option("--client-id", "-c").prompt("Client ID?")
+                /**
+                 * the OIDC clientID
+                 */
+                val clientId: String by option("--client-id", "-c").required()
 
-            /**
-             * the OIDC client secret
-             */
-            private val clientSecret: String by option("--client-secret", "-s").prompt("Client secret?")
+                /**
+                 * the OIDC client secret
+                 */
+                val clientSecret: String by option("--client-secret", "-s").required()
 
-            /**
-             * the OIDC callback URL FQDN. A callback to http://fqdn:port/path must be allowed in the OIDC provider!
-             */
-            private val callbackDomain: String by option(
-                "--callback-url",
-                help = "Callback URL FQDN (without protocol, port and path!), default ${OAuthDriverConfiguration.defaultCallbackDomain}." +
-                        "This must be enabled in your IdP!"
-            ).default(OAuthDriverConfiguration.defaultCallbackDomain)
+                /**
+                 * the OIDC callback URL FQDN. A callback to http://fqdn:port/path must be allowed in the OIDC provider!
+                 */
+                val callbackDomain: String by option(
+                    "--callback-url",
+                    help = "Callback URL FQDN (without protocol, port and path!), default ${OAuthDriverConfiguration.defaultCallbackDomain}." +
+                            "This must be enabled in your IdP!"
+                ).default(OAuthDriverConfiguration.defaultCallbackDomain)
 
-            /**
-             * Port for callback URL
-             */
-            private val callbackPort: Int by option(
-                "--callback-port",
-                help = "Port for callback URL, default ${OAuthDriverConfiguration.defaultCallbackPort}"
-            ).int()
-                .default(OAuthDriverConfiguration.defaultCallbackPort)
+                /**
+                 * Port for callback URL
+                 */
+                val callbackPort: Int by option(
+                    "--callback-port",
+                    help = "Port for callback URL, default ${OAuthDriverConfiguration.defaultCallbackPort}"
+                ).int()
+                    .default(OAuthDriverConfiguration.defaultCallbackPort)
 
-            /**
-             * Path for callback URL
-             */
-            private val callbackPath: String by option(
-                "--callback-path",
-                help = "Path for callback URL, default ${OAuthDriverConfiguration.defaultCallbackPath}"
-            ).default(OAuthDriverConfiguration.defaultCallbackPath)
+                /**
+                 * Path for callback URL
+                 */
+                val callbackPath: String by option(
+                    "--callback-path",
+                    help = "Path for callback URL, default ${OAuthDriverConfiguration.defaultCallbackPath}"
+                ).default(OAuthDriverConfiguration.defaultCallbackPath)
+            }
+
+            private val oidcOptions by OidcSettings().cooccurring()
 
             /**
              * initialize the Clikt context so that settings can be provided with environment variables
@@ -674,18 +682,23 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
             }
 
             override fun runFunctionBody() {
-                val oauthConfiguration = OAuthDriverConfiguration(
-                    openIdUrl,
-                    clientId,
-                    clientSecret,
-                    callbackDomain,
-                    callbackPort,
-                    callbackPath
-                )
-                pipeline.authenticationConfiguration = oauthConfiguration
-                val authDriver = OAuthAuthenticationDriver(oauthConfiguration)
+                val authConfiguration = oidcOptions?.let {
+                    OAuthDriverConfiguration(
+                        it.openIdUrl,
+                        it.clientId,
+                        it.clientSecret,
+                        it.callbackDomain,
+                        it.callbackPort,
+                        it.callbackPath
+                    )
+                } ?: NoOpAuthenticationConfiguration()
+                pipeline.authenticationConfiguration = authConfiguration
+                val authDriver = when (authConfiguration) {
+                    is OAuthDriverConfiguration -> OAuthAuthenticationDriver(authConfiguration)
+                    else -> NoOpAuthenticationDriver(authConfiguration as NoOpAuthenticationConfiguration)
+                }
                 val outputDriver = QL4MDRMdrOutput()
-                val ql4mdrConfiguration = QL4MDRConfiguration(oauthConfiguration, apiEndpoint)
+                val ql4mdrConfiguration = QL4MDRConfiguration(authConfiguration, apiEndpoint)
                 val ql4MdrSynchronization = QL4MDRSynchronization(authDriver, ql4mdrConfiguration, outputDriver)
                 val synchronizationPipeline = SynchronizationPipeline(ql4MdrSynchronization)
                 log.info("Using QL4MDR API.")
@@ -776,23 +789,6 @@ class TermiCronConsoleApplication(val fhirContext: FhirContext, private val log:
             .path(mustExist = false)
             .required()
     }
-
-    /*class BundleBuilderCommand(
-        val fhirContext: FhirContext,
-        val log: Logger
-    ) : CliktCommand(
-        printHelpOnEmptyArgs = true
-    ) {
-
-        private val inputFhirServers: List<String> by option(
-            "--fhir-server"
-        ).multiple(required = true)
-
-        override fun run() {
-            log.info("Starting Bundle Builder CUI")
-            BundleBuilderController(inputFhirServers, log).runBundleBuilder()
-        }
-    }*/
 }
 
 /**
