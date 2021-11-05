@@ -1,5 +1,7 @@
 # TermiCron Readme
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5647139.svg)](https://doi.org/10.5281/zenodo.5647139)
+
 TermiCron is a system to synchronize terminology with metadata repositories (MDRs).
 
 It takes in HL7 FHIR ValueSets and CodeSystems and is able to convert those to the MDR-specific representations.
