@@ -78,6 +78,18 @@ class FhirValueSetConverter(
             bundleEntryComponent.getCanonicalLink(),
             bundle
         ) as ValueSet
+        val attributeError = when {
+            valueSet.version.isNullOrBlank() -> TerminologyConversionError("There is no version provided for the ValueSet")
+            valueSet.title.isNullOrBlank() -> TerminologyConversionError("There is no title provided for the ValueSet")
+            else -> null
+        }
+        if (attributeError != null) {
+            return ValueSetExpansionOperation(
+                canonicalUrl = valueSet.url,
+                valueSetExpansion = null,
+                conversionError = attributeError
+            )
+        }
         val expandedValueSet = when {
             !valueSet.hasExpansion() && !ingestProvider.supportsExpansion() -> {
                 throw MissingExpansionException("there is no expansion for ValueSet '${valueSet.name}' (canonical: ${valueSet.url}")
