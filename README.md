@@ -1,6 +1,6 @@
 # TermiCron Readme
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5647139.svg)](https://doi.org/10.5281/zenodo.5647139)
+[![DOI](https://zenodo.org/badge/364859047.svg)](https://zenodo.org/badge/latestdoi/364859047)
 
 TermiCron is a system to synchronize terminology with metadata repositories (MDRs).
 
