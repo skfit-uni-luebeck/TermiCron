@@ -11,9 +11,8 @@ delegated to FHIR terminology tooling.
 
 This work is the subject of a paper submitted to MedInfo 2021:
 
-```
-Wiedekopf, J., Ulrich, H., Drenkhahn, C., Kock-Schoppenhauer, A., & Ingenerf, J. (in press). TermiCron – Bridging the Gap between FHIR Terminology Servers and Metadata Repositories. MedInfo 2021. 
-```
+
+> Wiedekopf, J., Ulrich, H., Drenkhahn, C., Kock-Schoppenhauer, A., & Ingenerf, J. (in press). TermiCron – Bridging the Gap between FHIR Terminology Servers and Metadata Repositories. MedInfo 2021. 
 
 ## Overview
 
